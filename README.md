@@ -3,9 +3,9 @@
 Prototype of a fridge customized to make hams.
 
 Using Software from: (Thanks to the creators ♥)
-https://github.com/9MMMinor/RaspberryPiPicoGFX (copied a few files. Some sort of build will be added later to use the code of the repository)
-https://gist.github.com/SpotlightKid/0a0aac56606286a80f860b116423c94f
-https://micropython.org/
+- https://github.com/9MMMinor/RaspberryPiPicoGFX (copied a few files. Some sort of build will be added later to use the code of the repository)
+- https://gist.github.com/SpotlightKid/0a0aac56606286a80f860b116423c94f
+- https://micropython.org/
 
 Parts used:
 * RaspberryPi Pico
