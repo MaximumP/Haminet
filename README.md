@@ -17,3 +17,4 @@ Parts used:
 * four push buttons
 
 Plan to add translations. For now everything is in german
+    
