@@ -5,7 +5,6 @@ from debounce import DebouncedSwitch
 from output import Pager
 from environment_control import EnvironmentControl
 
-
 dht = DHT22(Pin(22))
 timer = Timer(-1)
 up = Pin(12, Pin.IN, Pin.PULL_DOWN)
@@ -13,7 +12,6 @@ down = Pin(13, Pin.IN, Pin.PULL_DOWN)
 edit = Pin(14, Pin.IN, Pin.PULL_DOWN)
 enter = Pin(11, Pin.IN, Pin.PULL_DOWN)
 page_button = Pin(15, Pin.IN, Pin.PULL_DOWN)
-
 
 config = Config("config.json")
 environment_control = EnvironmentControl(
@@ -24,6 +22,7 @@ environment_control = EnvironmentControl(
     config=config
 )
 pager = Pager(dht, config, environment_control)
+
 
 def next_page(_=0):
     pager.next_page()

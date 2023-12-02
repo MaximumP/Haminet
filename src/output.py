@@ -1,9 +1,11 @@
-from machine import SPI, Pin, Timer
+from machine import SPI, Pin
 from config import Config
 from display.TFT_22_ILI9225 import TFT_22_ILI9225 as Display, COLOR_BLUE, COLOR_TURQUOISE
 from display.adafruit_gfx import GFX
+from display.fonts.Icons16x16 import Icons16x16
 from display.fonts.Terminal6x8 import Terminal6x8
 from display.fonts.TimesNR16x16 import TimesNR16x16
+from display.fonts.TimesNR39x37 import TimesNR39x37
 from display.glcFont import glcFont
 from environment_control import EnvironmentControl
 
@@ -17,10 +19,13 @@ spi = SPI(0, baudrate=40000000, sck=Pin(2), mosi=Pin(3))
 display = Display(spi, dc=Pin(8), cs=Pin(5), rst=Pin(9))
 display.clear()
 display.setOrientation(3)
-font = glcFont(display, Terminal6x8, eraseMode=True)
+font_small = glcFont(display, Terminal6x8, eraseMode=True)
+font_medium = glcFont(display, TimesNR16x16, eraseMode=True)
+font_big = glcFont(display, TimesNR39x37, eraseMode=True)
+icons = glcFont(display, Icons16x16, eraseMode=True)
 gfx = GFX(176, 220, display.drawPixel, hline=display.fastHline, vline=display.fastVline, fill_rect=display.fillRectangle)
 display.setBackgroundColor(0x0000)
-font.text(5, display.width - (font.height + 2), "Schinken Schrank", COLOR_RED)
+font_small.text(5, display.width - (font_small.height + 6), "Schinkenschrank", COLOR_WHITE)
 
 
 class Pager:
@@ -108,65 +113,73 @@ class Pager:
     def _display_overview_page(self):
         overview_lines = [
             {
-                "text": "Schinken Schrank",
-                "color": COLOR_RED
-            },
-            {
-                "text": "Ist",
-                "color": COLOR_GREEN
-            },
-            {
-                "text": f"Temperatur: {self._dht.temperature()} ~C",
+                "text": "Schinkenschrank",
                 "color": COLOR_WHITE
-            },
-            {
-                "text": f"Luftfeuchtigkeit: {self._dht.humidity()} %",
-                "color": COLOR_WHITE
-            },
-            {
-                "text": "Soll",
-                "color": COLOR_YELLOW
-            },
-            {
-                "text": f"Temperatur: {self._config.get_target_temperature()} ~C",
-                "color": COLOR_WHITE
-            },
-            {
-                "text": f"Luftfeuchtigkeit: {self._config.get_target_humidity()} %",
-                "color": COLOR_WHITE
-            },
-            {
-                "text": "",
-                "color": COLOR_BLACK
-            },
-            {
-                "text": "",
-                "color": COLOR_BLACK
-            },
-            {
-                "text": f"Luefter:    {'An' if self._environment.get_fan_state() else 'Aus'}",
-                "color": COLOR_YELLOW
-            },
-            {
-                "text": f"Befeuchter: {'An' if self._environment.get_atomizer_state() else 'Aus'}",
-                "color": COLOR_TURQUOISE
-            },
-            {
-                "text": f"Kuehlung:   {'An' if self._environment.get_fridge_status() else 'Aus'}",
-                "color": COLOR_BLUE
-            },
-            {
-                "text": f"Heizung:    {'An' if self._environment.get_heater_status() else 'Aus'}",
-                "color": COLOR_RED
-            },
+            }
         ]
-        self._print_to_display(overview_lines)
+        y_offset = self._print_to_display(overview_lines)
+        line_height = font_medium.height + 4 + y_offset
+        line_height_big = font_big.height + 2 + y_offset
+        temperature = f"{self._dht.temperature()}"  # todo add °
+        humidity = f"{self._dht.humidity()}"
+        font_big.text(
+            5,
+            display.width - line_height_big,
+            temperature,
+            COLOR_RED if self._environment.get_fridge_status() or self._environment.get_heater_status() else COLOR_GREEN
+        )
+        font_medium.text(
+            5 + font_big.getTextWidth(temperature) + 10,
+            display.width - line_height,
+            f"({self._config.get_target_temperature()} +- {self._config.get_temperature_tolerance()})",
+            COLOR_WHITE
+        )
+        font_big.text(
+            5,
+            display.width - line_height_big * 2,
+            humidity,
+            COLOR_RED if self._environment.get_fan_state() or self._environment.get_atomizer_state() else COLOR_GREEN
+        )
+        font_medium.text(
+            5 + font_big.getTextWidth(temperature) + 10,
+            display.width - (line_height_big + line_height),
+            f"({self._config.get_target_humidity()} +- {self._config.get_humidity_tolerance()})",
+            COLOR_WHITE
+        )
+        if self._environment.get_fan_state():
+            icons.text(
+                5,
+                display.width - line_height * 4,
+                "0",
+                COLOR_WHITE
+            )
+        if self._environment.get_atomizer_state():
+            icons.text(
+                5 + 20,
+                display.width - line_height * 4,
+                "1",
+                COLOR_BLUE
+            )
+        if self._environment.get_fridge_status():
+            icons.text(
+                5 + 40,
+                display.width - line_height * 4,
+                "2",
+                COLOR_TURQUOISE
+            )
+        if self._environment.get_heater_status():
+            icons.text(
+                5 + 60,
+                display.width - line_height * 4,
+                "3",
+                COLOR_RED
+            )
 
     def _display_edit_page(self):
         edit_lines = [
             {
-                "text": "Schinken Schrank",
-                "color": COLOR_RED
+                "text": "Schinkenschrank",
+                "color": COLOR_WHITE
             },
             {
                 "text": f"Temperatur: {self._edit_value if self._edit_mode and self._cursor == 0 else self._config.get_target_temperature()}",
@@ -199,13 +212,15 @@ class Pager:
 
         return COLOR_WHITE
 
-    def _print_to_display(self, lines):
-        line_height = font.height + 2
+    def _print_to_display(self, lines, font=font_small):
+        line_height = font.height + 6
         line = display.width - line_height
+        idx = 0
         for idx, text_line in enumerate(lines):
             y_offset = line - line_height * idx
             if self._edit_mode and self._cursor == line:
                 display.fillRectangle(5, y_offset, display.height, font.height, display.getBackgroundColor())
             font.text(5, y_offset, text_line.get("text"), text_line.get("color"))
 
-        font.text(5, font.height, f"Page: {self._page}", COLOR_YELLOW)
+        font.text(5, font_small.height, f"Page: {self._page}", COLOR_YELLOW)
+        return line_height * (idx + 1)
