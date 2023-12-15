@@ -18,13 +18,16 @@ page_button = Pin(15, Pin.IN, Pin.PULL_DOWN)
 config = Config("config.json")
 environment_control = EnvironmentControl(
     fan=Pin(16, mode=Pin.OUT, value=0),
-    atomizer=Pin(11, mode=Pin.OUT, value=0),
+    atomizer=Pin(19, mode=Pin.OUT, value=0),
     fridge=Pin(17, mode=Pin.OUT, value=0),
     heater=Pin(18, mode=Pin.OUT, value=0),
+    led_green=Pin(6, Pin.OUT, value=0),
+    led_red=Pin(1, Pin.OUT, value=0),
+    led_orange=Pin(0, Pin.OUT, value=0),
+    led_yellow=Pin(4, Pin.OUT, value=0),
     config=config
 )
 pager = Pager(dht, config, environment_control)
-
 
 page_handler = DebouncedSwitch(page_button, lambda l: pager.next_page())
 up_handler = DebouncedSwitch(up, lambda l: pager.cursor_up())

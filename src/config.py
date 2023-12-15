@@ -64,12 +64,13 @@ class Config:
             print("read config file")
 
     def _write_config_file(self):
-        json = ujson.dumps({
-            "target_temperature": self._target_temperature,
-            "target_humidity": self._target_humidity,
-            "humidity_tolerance": self._humidity_tolerance,
-            "temperature_tolerance": self._temperature_tolerance
-        })
-        with open(self._config_file, "w") as config_file:
-            config_file.write(json)
-        print("created config file")
+        if self._config_file:
+            json = ujson.dumps({
+                "target_temperature": self._target_temperature,
+                "target_humidity": self._target_humidity,
+                "humidity_tolerance": self._humidity_tolerance,
+                "temperature_tolerance": self._temperature_tolerance
+            })
+            with open(self._config_file, "w") as config_file:
+                config_file.write(json)
+            print("created config file")
