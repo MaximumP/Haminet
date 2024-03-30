@@ -32,7 +32,7 @@ class EnvironmentControl:
         if humidity >= (self._config.get_target_humidity() + self._config.get_humidity_tolerance()):
             self._fan.value(1)
             self._led_yellow.value(1)
-        if humidity <= (self._config.get_target_humidity() - self._config.get_humidity_tolerance() / 2):
+        if humidity <= self._config.get_target_humidity():
             self._fan.value(0)
             self._led_yellow.value(0)
 
@@ -40,7 +40,7 @@ class EnvironmentControl:
         if humidity <= (self._config.get_target_humidity() - self._config.get_humidity_tolerance()):
             self._atomizer.value(1)
             self._led_orange.value(1)
-        if humidity >= (self._config.get_target_humidity() + self._config.get_humidity_tolerance() / 2):
+        if humidity >= self._config.get_target_humidity():
             self._atomizer.value(0)
             self._led_orange.value(0)
 
@@ -48,7 +48,7 @@ class EnvironmentControl:
         if temperature >= (self._config.get_target_temperature() + self._config.get_temperature_tolerance()):
             self._fridge.value(1)
             self._led_green.value(1)
-        if temperature <= (self._config.get_target_temperature() - self._config.get_temperature_tolerance() / 2):
+        if temperature <= self._config.get_target_temperature():
             self._fridge.value(0)
             self._led_green.value(0)
 

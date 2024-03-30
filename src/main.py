@@ -10,20 +10,19 @@ from environment_control import EnvironmentControl
 dht = DHT22(Pin(22))
 timer = Timer(-1)
 up = Pin(17, Pin.IN, Pin.PULL_DOWN)
-down = Pin(19, Pin.IN, Pin.PULL_DOWN)
+down = Pin(21, Pin.IN, Pin.PULL_DOWN)
 edit = Pin(18, Pin.IN, Pin.PULL_DOWN)
-# enter = Pin(11, Pin.IN, Pin.PULL_DOWN)
 page_button = Pin(16, Pin.IN, Pin.PULL_DOWN)
 
 config = Config("config.json")
 environment_control = EnvironmentControl(
     fan=Pin(12, mode=Pin.OUT, value=0),
-    atomizer=Pin(13, mode=Pin.OUT, value=0),
+    atomizer=Pin(20, mode=Pin.OUT, value=0),
     fridge=Pin(14, mode=Pin.OUT, value=0),
     heater=Pin(15, mode=Pin.OUT, value=0),
-    led_green=Pin(0, Pin.OUT, value=0),
-    led_red=Pin(1, Pin.OUT, value=0),
-    led_orange=Pin(4, Pin.OUT, value=0),
+    led_green=Pin(4, Pin.OUT, value=0),
+    led_red=Pin(0, Pin.OUT, value=0),
+    led_orange=Pin(1, Pin.OUT, value=0),
     led_yellow=Pin(6, Pin.OUT, value=0),
     config=config
 )
@@ -36,9 +35,14 @@ edit_handler = DebouncedSwitch(edit, lambda l: pager.edit())
 
 
 def main():
+    iteration = 0
     while True:
+        iteration = iteration + 1
         try:
             dht.measure()
+        except OSError as e:
+            print(e)
+        try:
             environment_control.control(dht.temperature(), dht.humidity())
             pager.display()
         except OSError as e:
