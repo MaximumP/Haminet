@@ -18,8 +18,8 @@ config = Config("config.json")
 environment_control = EnvironmentControl(
     fan=Pin(12, mode=Pin.OUT, value=0),
     atomizer=Pin(20, mode=Pin.OUT, value=0),
-    fridge=Pin(14, mode=Pin.OUT, value=0),
-    heater=Pin(15, mode=Pin.OUT, value=0),
+    fridge=Pin(13, mode=Pin.OUT, value=0),
+    heater=Pin(14, mode=Pin.OUT, value=0),
     led_green=Pin(4, Pin.OUT, value=0),
     led_red=Pin(0, Pin.OUT, value=0),
     led_orange=Pin(1, Pin.OUT, value=0),
