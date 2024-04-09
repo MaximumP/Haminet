@@ -18,7 +18,7 @@ config = Config("config.json")
 environment_control = EnvironmentControl(
     fan=Pin(12, mode=Pin.OUT, value=0),
     atomizer=Pin(20, mode=Pin.OUT, value=0),
-    fridge=Pin(13, mode=Pin.OUT, value=0),
+    fridge=Pin(13, mode=Pin.OUT, value=1),
     heater=Pin(14, mode=Pin.OUT, value=0),
     led_green=Pin(4, Pin.OUT, value=0),
     led_red=Pin(0, Pin.OUT, value=0),
@@ -35,9 +35,7 @@ edit_handler = DebouncedSwitch(edit, lambda l: pager.edit())
 
 
 def main():
-    iteration = 0
     while True:
-        iteration = iteration + 1
         try:
             dht.measure()
         except OSError as e:

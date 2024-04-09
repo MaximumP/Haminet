@@ -1,3 +1,5 @@
+from enum import Enum
+
 from machine import SPI, Pin
 from config import Config
 from display.TFT_22_ILI9225 import TFT_22_ILI9225 as Display, COLOR_BLUE, COLOR_TURQUOISE
@@ -26,6 +28,32 @@ icons = glcFont(display, Icons16x16, eraseMode=True)
 gfx = GFX(176, 220, display.drawPixel, hline=display.fastHline, vline=display.fastVline, fill_rect=display.fillRectangle)
 display.setBackgroundColor(0x0000)
 
+
+class Cursor(Enum):
+    TEMPERATURE = 0
+    TEMPERATURE_DELTA = 1
+    HUMIDITY = 2
+    HUMIDITY_DELTA = 3
+
+    def next(self):
+        if self.value == 3:
+            self.value = 0
+        else:
+            self.value += 1
+
+
+
+class HaminetDisplay(Display):
+
+    _cursor: Cursor = Cursor.TEMPERATURE
+
+    def __init__(self, spi, cs, dc, rst):
+        super().__init__(spi, cs, dc, rst)
+        self.setBackgroundColor(COLOR_BLACK)
+        self.clear()
+        self._font_small = glcFont(self, TimesNR16x16, eraseMode=True)
+        self._font_big = glcFont(self, TimesNR39x37, eraseMode=True)
+        self._icon_font = Icons16x16(display, Icons16x16, eraseMode=True)
 
 class Pager:
     _page = 0
@@ -114,8 +142,8 @@ class Pager:
     def _display_overview_page(self):
         line_height_medium = font_medium.height + 4
         line_height_big = font_big.height + 2
-        temperature = f"{self._dht.temperature()}"
-        humidity = f"{self._dht.humidity()}"
+        temperature = f"{self._dht.temperature():.1f}"
+        humidity = f"{self._dht.humidity():.1f}"
         y_offset = display.height - line_height_big
         temp_color = COLOR_RED if self._environment.get_fridge_status() or self._environment.get_heater_status() else COLOR_GREEN
         font_big.text(
@@ -124,8 +152,8 @@ class Pager:
             temperature,
             temp_color
         )
-        x = 10 + font_big.width * len(temperature)
-        font_medium.text(x, y_offset, "~", temp_color)
+        x = font_big.getTextWidth(temperature) + 10
+        font_medium.text(x, y_offset + (font_big.height - font_medium.height), "~", temp_color)
         y_offset -= line_height_medium
         font_medium.text(
             5,
@@ -134,12 +162,15 @@ class Pager:
             COLOR_WHITE
         )
         y_offset -= line_height_big + 5
+        humidity_color = COLOR_RED if self._environment.get_atomizer_state() or self._environment.get_fan_state() else COLOR_GREEN
         font_big.text(
             5,
             y_offset,
             humidity,
-            COLOR_RED if self._environment.get_fan_state() or self._environment.get_atomizer_state() else COLOR_GREEN
+            humidity_color
         )
+        x = font_big.getTextWidth(humidity) + 10
+        font_medium.text(x, y_offset + (font_big.height - int(font_medium.height * 1.5)), "%", humidity_color)
         y_offset -= line_height_medium
         font_medium.text(
             5,
@@ -148,18 +179,18 @@ class Pager:
             COLOR_WHITE
         )
         y_offset -= line_height_medium + 5
+        display.fillRectangle(5, y_offset, icons.width * 3, icons.height, COLOR_BLACK)
         if self._environment.get_fan_state():
             icons.text(5, y_offset, "0", COLOR_WHITE)
+
         if self._environment.get_atomizer_state():
             icons.text(5, y_offset, "1", COLOR_BLUE)
-        if not self._environment.get_fan_state() and not self._environment.get_atomizer_state():
-            icons.text(5, y_offset, " ", COLOR_WHITE)
+
         if self._environment.get_fridge_status():
             icons.text(10 + icons.width, y_offset, "2", COLOR_TURQUOISE)
+
         if self._environment.get_heater_status():
             icons.text(10 + icons.width, y_offset, "3", COLOR_RED)
-        if not self._environment.get_fridge_status() and not self._environment.get_heater_status():
-            icons.text(5, y_offset, " ", COLOR_WHITE)
 
     def _display_edit_page(self):
         edit_lines = [

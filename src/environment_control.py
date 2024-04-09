@@ -1,4 +1,6 @@
 class EnvironmentControl:
+    _prev_temperature: None | float = None
+    _prev_humidity: None | float = None
 
     def __init__(
             self,
@@ -23,16 +25,24 @@ class EnvironmentControl:
         self._led_yellow = led_yellow
 
     def control(self, temperature: float, humidity: float):
+        if not self._prev_humidity:
+            self._prev_humidity = humidity
+        if not self._prev_temperature:
+            self._prev_temperature = temperature
         self._control_fan(humidity)
         self._control_atomizer(humidity)
         self._control_fridge(temperature)
         self._control_heater(temperature)
 
+        self._prev_temperature = temperature
+        self._prev_humidity = humidity
+
     def _control_fan(self, humidity: float):
-        if humidity >= (self._config.get_target_humidity() + self._config.get_humidity_tolerance()):
+        if (humidity >= (self._config.get_target_humidity() + self._config.get_humidity_tolerance()) and
+                self._prev_humidity >= (self._config.get_target_humidity() + self._config.get_humidity_tolerance())):
             self._fan.value(1)
             self._led_yellow.value(1)
-        if humidity <= self._config.get_target_humidity():
+        if humidity <= self._config.get_target_humidity() and self._prev_humidity <= self._config.get_target_humidity():
             self._fan.value(0)
             self._led_yellow.value(0)
 
@@ -45,11 +55,14 @@ class EnvironmentControl:
             self._led_orange.value(0)
 
     def _control_fridge(self, temperature: float):
-        if temperature >= (self._config.get_target_temperature() + self._config.get_temperature_tolerance()):
-            self._fridge.value(1)
-            self._led_green.value(1)
-        if temperature <= self._config.get_target_temperature():
+        if (temperature >= (self._config.get_target_temperature() + self._config.get_temperature_tolerance()) and
+                self._prev_temperature >=
+                (self._config.get_target_temperature() + self._config.get_temperature_tolerance())):
             self._fridge.value(0)
+            self._led_green.value(1)
+        if (temperature <= self._config.get_target_temperature() and
+                self._prev_temperature <= self._config.get_target_temperature()):
+            self._fridge.value(1)
             self._led_green.value(0)
 
     def _control_heater(self, temperature: float):
@@ -67,7 +80,7 @@ class EnvironmentControl:
         return bool(self._atomizer.value())
 
     def get_fridge_status(self) -> bool:
-        return bool(self._fridge.value())
+        return not bool(self._fridge.value())
 
     def get_heater_status(self) -> bool:
         return bool(self._heater.value())
