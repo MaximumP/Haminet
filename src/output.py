@@ -18,7 +18,7 @@ COLOR_YELLOW = 0xFFE0  # 255, 255,   0
 spi = SPI(0, baudrate=40000000, sck=Pin(2), mosi=Pin(3))
 display = Display(spi, dc=Pin(8), cs=Pin(5), rst=Pin(9))
 display.clear()
-display.setOrientation(2)
+display.setOrientation(0)
 font_small = glcFont(display, Terminal6x8, eraseMode=True)
 font_medium = glcFont(display, TimesNR16x16, eraseMode=True)
 font_big = glcFont(display, TimesNR39x37, eraseMode=True)
@@ -51,20 +51,8 @@ class Pager:
             self._page = 0
             self._edit_mode = False
             self._edit_value = None
-        print(f"page is: {self._page}")
 
     def cursor_up(self):
-        if self._page == 0:
-            return
-        if self._edit_mode:
-            self._edit_value -= .5
-            return
-        if self._cursor < 3:
-            self._cursor += 1
-        else:
-            self._cursor = 0
-
-    def cursor_down(self):
         if self._page == 0:
             return
         if self._edit_mode:
@@ -74,6 +62,17 @@ class Pager:
             self._cursor -= 1
         else:
             self._cursor = 3
+
+    def cursor_down(self):
+        if self._page == 0:
+            return
+        if self._edit_mode:
+            self._edit_value -= .5
+            return
+        if self._cursor < 3:
+            self._cursor += 1
+        else:
+            self._cursor = 0
 
     def edit(self):
         if self._page == 0:
@@ -115,15 +114,18 @@ class Pager:
     def _display_overview_page(self):
         line_height_medium = font_medium.height + 4
         line_height_big = font_big.height + 2
-        temperature = f"{self._dht.temperature()}"  # todo add °
-        humidity = f"{self._dht.humidity()}"
+        temperature = f"{self._dht.temperature():.1f}"
+        humidity = f"{self._dht.humidity():.1f}"
         y_offset = display.height - line_height_big
+        temp_color = COLOR_RED if self._environment.get_fridge_status() or self._environment.get_heater_status() else COLOR_GREEN
         font_big.text(
             5,
             y_offset,
             temperature,
-            COLOR_RED if self._environment.get_fridge_status() or self._environment.get_heater_status() else COLOR_GREEN
+            temp_color
         )
+        x = font_big.getTextWidth(temperature) + 10
+        font_medium.text(x, y_offset + (font_big.height - font_medium.height), "~", temp_color)
         y_offset -= line_height_medium
         font_medium.text(
             5,
@@ -132,12 +134,15 @@ class Pager:
             COLOR_WHITE
         )
         y_offset -= line_height_big + 5
+        humidity_color = COLOR_RED if self._environment.get_atomizer_state() or self._environment.get_fan_state() else COLOR_GREEN
         font_big.text(
             5,
             y_offset,
             humidity,
-            COLOR_RED if self._environment.get_fan_state() or self._environment.get_atomizer_state() else COLOR_GREEN
+            humidity_color
         )
+        x = font_big.getTextWidth(humidity) + 10
+        font_medium.text(x, y_offset + (font_big.height - int(font_medium.height * 1.5)), "%", humidity_color)
         y_offset -= line_height_medium
         font_medium.text(
             5,
@@ -146,34 +151,21 @@ class Pager:
             COLOR_WHITE
         )
         y_offset -= line_height_medium + 5
+        #if self._environment.state_changed():
+        display.fillRectangle(5, y_offset, icons.width * 3, icons.height, COLOR_BLACK)
         if self._environment.get_fan_state():
-            icons.text(
-                5,
-                y_offset,
-                "0",
-                COLOR_WHITE
-            )
+            icons.text(5, y_offset, "0", COLOR_WHITE)
+
         if self._environment.get_atomizer_state():
-            icons.text(
-                5,
-                y_offset,
-                "1",
-                COLOR_BLUE
-            )
+            icons.text(5, y_offset, "1", COLOR_BLUE)
+
         if self._environment.get_fridge_status():
-            icons.text(
-                10 + icons.width,
-                y_offset,
-                "2",
-                COLOR_TURQUOISE
-            )
+            icons.text(10 + icons.width, y_offset, "2", COLOR_TURQUOISE)
+
         if self._environment.get_heater_status():
-            icons.text(
-                10 + icons.width,
-                y_offset,
-                "3",
-                COLOR_RED
-            )
+            icons.text(10 + icons.width, y_offset, "3", COLOR_RED)
+
+
 
     def _display_edit_page(self):
         edit_lines = [
@@ -224,3 +216,4 @@ class Pager:
             if self._edit_mode and self._cursor == line:
                 display.fillRectangle(5, y_offset, display.height, font.height, display.getBackgroundColor())
             font.text(5, y_offset, text_line.get("text"), text_line.get("color"))
+
