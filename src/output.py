@@ -1,6 +1,10 @@
 from machine import SPI, Pin
 from config import Config
-from display.TFT_22_ILI9225 import TFT_22_ILI9225 as Display, COLOR_BLUE, COLOR_TURQUOISE
+from display.TFT_22_ILI9225 import (
+    TFT_22_ILI9225 as Display,
+    COLOR_BLUE,
+    COLOR_TURQUOISE,
+)
 from display.adafruit_gfx import GFX
 from display.fonts.Icons16x16 import Icons16x16
 from display.fonts.Terminal6x8 import Terminal6x8
@@ -23,7 +27,14 @@ font_small = glcFont(display, Terminal6x8, eraseMode=True)
 font_medium = glcFont(display, TimesNR16x16, eraseMode=True)
 font_big = glcFont(display, TimesNR39x37, eraseMode=True)
 icons = glcFont(display, Icons16x16, eraseMode=True)
-gfx = GFX(176, 220, display.drawPixel, hline=display.fastHline, vline=display.fastVline, fill_rect=display.fillRectangle)
+gfx = GFX(
+    176,
+    220,
+    display.drawPixel,
+    hline=display.fastHline,
+    vline=display.fastVline,
+    fill_rect=display.fillRectangle,
+)
 display.setBackgroundColor(0x0000)
 
 
@@ -56,7 +67,7 @@ class Pager:
         if self._page == 0:
             return
         if self._edit_mode:
-            self._edit_value += .5
+            self._edit_value += 0.5
             return
         if self._cursor > 0:
             self._cursor -= 1
@@ -67,7 +78,7 @@ class Pager:
         if self._page == 0:
             return
         if self._edit_mode:
-            self._edit_value -= .5
+            self._edit_value -= 0.5
             return
         if self._cursor < 3:
             self._cursor += 1
@@ -117,41 +128,48 @@ class Pager:
         temperature = f"{self._dht.temperature():.1f}"
         humidity = f"{self._dht.humidity():.1f}"
         y_offset = display.height - line_height_big
-        temp_color = COLOR_RED if self._environment.get_fridge_status() or self._environment.get_heater_status() else COLOR_GREEN
-        font_big.text(
-            5,
-            y_offset,
-            temperature,
-            temp_color
+        temp_color = (
+            COLOR_RED
+            if self._environment.get_fridge_status()
+            or self._environment.get_heater_status()
+            else COLOR_GREEN
         )
+        font_big.text(5, y_offset, temperature, temp_color)
         x = font_big.getTextWidth(temperature) + 10
-        font_medium.text(x, y_offset + (font_big.height - font_medium.height), "~", temp_color)
+        font_medium.text(
+            x, y_offset + (font_big.height - font_medium.height), "~", temp_color
+        )
         y_offset -= line_height_medium
         font_medium.text(
             5,
             y_offset,
             f"({self._config.get_target_temperature()} +- {self._config.get_temperature_tolerance()})",
-            COLOR_WHITE
+            COLOR_WHITE,
         )
         y_offset -= line_height_big + 5
-        humidity_color = COLOR_RED if self._environment.get_atomizer_state() or self._environment.get_fan_state() else COLOR_GREEN
-        font_big.text(
-            5,
-            y_offset,
-            humidity,
-            humidity_color
+        humidity_color = (
+            COLOR_RED
+            if self._environment.get_atomizer_state()
+            or self._environment.get_fan_state()
+            else COLOR_GREEN
         )
+        font_big.text(5, y_offset, humidity, humidity_color)
         x = font_big.getTextWidth(humidity) + 10
-        font_medium.text(x, y_offset + (font_big.height - int(font_medium.height * 1.5)), "%", humidity_color)
+        font_medium.text(
+            x,
+            y_offset + (font_big.height - int(font_medium.height * 1.5)),
+            "%",
+            humidity_color,
+        )
         y_offset -= line_height_medium
         font_medium.text(
             5,
             y_offset,
             f"({self._config.get_target_humidity()} +- {self._config.get_humidity_tolerance()})",
-            COLOR_WHITE
+            COLOR_WHITE,
         )
         y_offset -= line_height_medium + 5
-        #if self._environment.state_changed():
+        # if self._environment.state_changed():
         display.fillRectangle(5, y_offset, icons.width * 3, icons.height, COLOR_BLACK)
         if self._environment.get_fan_state():
             icons.text(5, y_offset, "0", COLOR_WHITE)
@@ -165,34 +183,26 @@ class Pager:
         if self._environment.get_heater_status():
             icons.text(10 + icons.width, y_offset, "3", COLOR_RED)
 
-
-
     def _display_edit_page(self):
         edit_lines = [
             {
                 "text": f"Temperatur: {self._edit_value if self._edit_mode and self._cursor == 0 else self._config.get_target_temperature()}",
-                "color": self._get_font_color(0)
+                "color": self._get_font_color(0),
             },
             {
                 "text": f"Toleranz: {self._edit_value if self._edit_mode and self._cursor == 1 else self._config.get_temperature_tolerance()}",
-                "color": self._get_font_color(1)
+                "color": self._get_font_color(1),
             },
-            {
-                "text": "",
-                "color": COLOR_WHITE
-            },
-            {
-                "text": "",
-                "color": COLOR_WHITE
-            },
+            {"text": "", "color": COLOR_WHITE},
+            {"text": "", "color": COLOR_WHITE},
             {
                 "text": f"Luftfeuchtigkeit: {self._edit_value if self._edit_mode and self._cursor == 2 else self._config.get_target_humidity()}",
-                "color": self._get_font_color(2)
+                "color": self._get_font_color(2),
             },
             {
                 "text": f"Toleranz: {self._edit_value if self._edit_mode and self._cursor == 3 else self._config.get_humidity_tolerance()}",
-                "color": self._get_font_color(3)
-            }
+                "color": self._get_font_color(3),
+            },
         ]
         self._print_to_display(edit_lines)
 
@@ -214,6 +224,11 @@ class Pager:
         for idx, text_line in enumerate(lines):
             y_offset = line - line_height * idx
             if self._edit_mode and self._cursor == line:
-                display.fillRectangle(5, y_offset, display.height, font.height, display.getBackgroundColor())
+                display.fillRectangle(
+                    5,
+                    y_offset,
+                    display.height,
+                    font.height,
+                    display.getBackgroundColor(),
+                )
             font.text(5, y_offset, text_line.get("text"), text_line.get("color"))
-

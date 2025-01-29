@@ -33,6 +33,7 @@ page_handler = DebouncedSwitch(page_button, lambda l: pager.next_page())
 up_handler = DebouncedSwitch(up, lambda l: pager.cursor_up())
 down_handler = DebouncedSwitch(down, lambda l: pager.cursor_down())
 edit_handler = DebouncedSwitch(edit, lambda l: pager.edit())
+new_display = ILI9225()
 
 
 def main():
