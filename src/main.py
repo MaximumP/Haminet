@@ -4,6 +4,7 @@ from machine import Pin, Timer
 from dht import DHT22
 from config import Config
 from debounce import DebouncedSwitch
+
 from output import Pager
 from environment_control import EnvironmentControl
 
@@ -33,13 +34,18 @@ page_handler = DebouncedSwitch(page_button, lambda l: pager.next_page())
 up_handler = DebouncedSwitch(up, lambda l: pager.cursor_up())
 down_handler = DebouncedSwitch(down, lambda l: pager.cursor_down())
 edit_handler = DebouncedSwitch(edit, lambda l: pager.edit())
-new_display = ILI9225()
 
 
 def main():
     while True:
         try:
             dht.measure()
+        except OSError as e:
+            dht.temperature = lambda: 32
+            dht.humidity = lambda: 50
+            dht.measure = lambda: None
+            print(e)
+        try:
             environment_control.control(dht.temperature(), dht.humidity())
             pager.display()
         except OSError as e:

@@ -180,6 +180,11 @@ class ILI9225:
         """Draw text at the specified position."""
         self._fb.text(string, x, y, color)
 
+    def ellipse(
+        self, x: int, y: int, xr: int, yr: int, color: int, fill: bool = False
+    ) -> None:
+        self._fb.ellipse(x, y, xr, yr, color, fill)
+
     def _reset_display(self):
         self._reset.value(0)
         sleep(0.05)
@@ -227,19 +232,31 @@ COLOR_ORANGE = 0xFD20  # 255, 165,   0
 COLOR_SNOW = 0xFFDF  # 255, 250, 250
 COLOR_YELLOW = 0xFFE0  # 255, 255,   0
 
-print("Print something to the display")
-spi = SPI(0, baudrate=40000000, sck=Pin(2), mosi=Pin(3))
-display = ILI9225(spi, 5, 8, 9)
-display.fill(COLOR_BLACK)
-display.text("Hello ILI9225!", 10, 10, COLOR_RED)
-display.text("Temperatur 31°", 10, 20, COLOR_GREEN)
-display._fb.rect(10, 35, 100, 100, COLOR_BEIGE)
-display.update()
-for i in range(15):
-    display.fill(COLOR_BLACK)
-    display._fb.rect(
-        3 * i, 5 * i, 10, 10, [COLOR_GREEN, COLOR_RED, COLOR_BLUE][i % 3], True
-    )
-    display.update()
-print("Now I should see it")
+
+# def color565(r, g, b):
+#    """Return RGB565 color value.
+#    Args:
+#        r (int): Red value.
+#        g (int): Green value.
+#        b (int): Blue value.
+#    """
+#    return (r & 0xF8) << 8 | (b & 0xFC) << 3 | g >> 3
+#
+#
+# print("Print something to the display")
+# spi = SPI(0, baudrate=40000000, sck=Pin(2), mosi=Pin(3))
+# display = ILI9225(spi, 5, 8, 9)
+# display.fill(COLOR_BLACK)
+# display.text("Hello ILI9225!", 10, 10, COLOR_RED)
+# display.text("Temperatur 31", 10, 20, color565(0, 255, 0))
+# display.update()
+# display._fb.rect(10, 35, 100, 100, COLOR_BEIGE)
+# display.update()
+# for i in range(15):
+#    display.fill(COLOR_BLACK)
+#    display._fb.rect(
+#        3 * i, 5 * i, 10, 10, [COLOR_GREEN, COLOR_RED, COLOR_BLUE][i % 3], True
+#    )
+#    display.update()
+# print("Now I should see it")
 # display = Display(spi, dc=Pin(8), cs=Pin(5), rst=Pin(9))
