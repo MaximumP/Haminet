@@ -1,4 +1,5 @@
 from time import sleep
+from random import uniform
 
 from machine import Pin, Timer
 from dht import DHT22
@@ -41,8 +42,8 @@ def main():
         try:
             dht.measure()
         except OSError as e:
-            dht.temperature = lambda: 32
-            dht.humidity = lambda: 50
+            dht.temperature = lambda: 4  # uniform(5.0, 32.5)
+            dht.humidity = lambda: uniform(15.0, 78.8)
             dht.measure = lambda: None
             print(e)
         try:
@@ -50,6 +51,7 @@ def main():
             pager.display()
         except OSError as e:
             print(e)
+        sleep(1)
 
 
 def start_up():

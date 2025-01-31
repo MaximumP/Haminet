@@ -1,7 +1,7 @@
 from dht import DHT22
 from machine import SPI, Pin
 from config import Config
-from display.ili9225 import ILI9225
+from display.ili9225 import COLOR_BLUE, ILI9225
 from environment_control import EnvironmentControl
 
 COLOR_BLACK = 0x0000  # 0,   0,   0
@@ -108,35 +108,52 @@ class Pager:
             or self._environment.get_heater_status()
             else COLOR_GREEN
         )
-        self._display.text(string=temperature, x=5, y=5, color=temp_color)
-        self._display.ellipse(
-            x=len(temperature) * 8 + 2, y=5, xr=4, yr=4, color=temp_color
+        # Line 1
+        self._display.rect(
+            x=5, y=5, width=self._display._width, height=16, color=COLOR_BLACK
         )
+        self._display.text16(string="12", x=5, y=5, color=temp_color)
+        # self._display.ellipse(
+        #     x=len(temperature) * 8 + 8, y=7, xr=2, yr=2, color=temp_color
+        # )
+        # # Line 2
+        # self._display.rect(
+        #     x=5, y=15, width=self._display._width, height=8, color=COLOR_BLACK
+        # )
+        # self._display.text(
+        #     string=f"{self._config._target_temperature} +- {self._config.get_temperature_tolerance()}",
+        #     x=5,
+        #     y=15,
+        #     color=COLOR_WHITE,
+        # )
 
-        self._display.text(
-            string=f"{self._config._target_temperature} +- {self._config.get_temperature_tolerance()}",
-            x=5,
-            y=15,
-            color=COLOR_WHITE,
-        )
-
-        humidity_color = (
-            COLOR_RED
-            if self._environment.get_atomizer_state()
-            or self._environment.get_fan_state()
-            else COLOR_GREEN
-        )
-        self._display.text(string=humidity, x=5, y=25, color=humidity_color)
-        self._display.ellipse(
-            x=len(humidity) * 8 + 2, y=25, xr=4, yr=4, color=COLOR_WHITE
-        )
-
-        self._display.text(
-            string=f"{self._config.get_target_humidity()} +- {self._config.get_humidity_tolerance()}",
-            x=5,
-            y=25,
-            color=COLOR_WHITE,
-        )
+        # humidity_color = (
+        #     COLOR_RED
+        #     if self._environment.get_atomizer_state()
+        #     or self._environment.get_fan_state()
+        #     else COLOR_GREEN
+        # )
+        # # Line 3
+        # self._display.rect(
+        #     x=5, y=25, width=self._display._width, height=8, color=COLOR_BLACK
+        # )
+        # self._display.text(string=humidity, x=5, y=25, color=humidity_color)
+        # # Line 4
+        # self._display.rect(
+        #     x=5, y=35, width=self._display._width, height=8, color=COLOR_BLACK
+        # )
+        # self._display.text(
+        #     string=f"{self._config.get_target_humidity()} +- {self._config.get_humidity_tolerance()}",
+        #     x=5,
+        #     y=35,
+        #     color=COLOR_WHITE,
+        # )
+        # self._display.text16('', 5, 50, COLOR_BLUE)
+        # self._display.text16("the quick", 2, 50, COLOR_GREEN)
+        # self._display.text16("brown fox", 2, 70, COLOR_GREEN)
+        # self._display.text16("jumps over", 2, 90, COLOR_GREEN)
+        # self._display.text16("the lazy", 2, 110, COLOR_GREEN)
+        # self._display.text16("dog", 2, 130, COLOR_GREEN)
         self._display.update()
 
         # y_offset -= line_height_medium + 5

@@ -1,4 +1,5 @@
 from framebuf import FrameBuffer, RGB565
+from display.fonts.font16x16 import font
 from machine import Pin, SPI
 from time import sleep
 
@@ -129,8 +130,6 @@ class ILI9225:
         self._data_command(1)
         self._spi.write(value.to_bytes(2, "big"))
         self._chip_select(1)
-        # self.write_command(command)
-        # self.write_data(value)
 
     def write_command(self, command: int):
         self._data_command.value(0)
@@ -176,9 +175,33 @@ class ILI9225:
         """Set a single pixel to the specified color."""
         self._fb.pixel(x, y, color)
 
-    def text(self, string, x, y, color):
-        """Draw text at the specified position."""
+    def text(self, string: str, x: int, y: int, color: int) -> tuple[int, int]:
+        """Draw text at the specified position. Return a x y tupel of the last rendered character"""
         self._fb.text(string, x, y, color)
+        return (x + (len(string) * 8), y + 8)
+
+    def text16(self, string, x, y, color) -> tuple[int, int]:
+        x0 = x
+        y0 = y
+        for cnt, char in enumerate(string):
+            print(
+                f"print character '{char}' #{ord(char)} to position x: {x + (cnt + 16)} y: {y}"
+            )
+            char_start_index = (ord(char) - 32) * 16
+            for column in range(16):  # loop over character data
+                char_column = font[char_start_index + column]
+                for v_line in range(16):
+                    pixel = char_column >> v_line
+                    if pixel & 1:
+                        self._fb.pixel(x0, v_line + y0, color)
+                x0 = x0 + 1
+
+        return (x + (len(string) * 16), y + 16)
+
+    def rect(
+        self, x: int, y: int, width: int, height: int, color: int, fill: bool = True
+    ) -> None:
+        self._fb.rect(x, y, width, height, color, fill)
 
     def ellipse(
         self, x: int, y: int, xr: int, yr: int, color: int, fill: bool = False
@@ -231,32 +254,3 @@ COLOR_GOLD = 0xFEA0  # 255, 215,   0
 COLOR_ORANGE = 0xFD20  # 255, 165,   0
 COLOR_SNOW = 0xFFDF  # 255, 250, 250
 COLOR_YELLOW = 0xFFE0  # 255, 255,   0
-
-
-# def color565(r, g, b):
-#    """Return RGB565 color value.
-#    Args:
-#        r (int): Red value.
-#        g (int): Green value.
-#        b (int): Blue value.
-#    """
-#    return (r & 0xF8) << 8 | (b & 0xFC) << 3 | g >> 3
-#
-#
-# print("Print something to the display")
-# spi = SPI(0, baudrate=40000000, sck=Pin(2), mosi=Pin(3))
-# display = ILI9225(spi, 5, 8, 9)
-# display.fill(COLOR_BLACK)
-# display.text("Hello ILI9225!", 10, 10, COLOR_RED)
-# display.text("Temperatur 31", 10, 20, color565(0, 255, 0))
-# display.update()
-# display._fb.rect(10, 35, 100, 100, COLOR_BEIGE)
-# display.update()
-# for i in range(15):
-#    display.fill(COLOR_BLACK)
-#    display._fb.rect(
-#        3 * i, 5 * i, 10, 10, [COLOR_GREEN, COLOR_RED, COLOR_BLUE][i % 3], True
-#    )
-#    display.update()
-# print("Now I should see it")
-# display = Display(spi, dc=Pin(8), cs=Pin(5), rst=Pin(9))
