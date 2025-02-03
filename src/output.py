@@ -112,10 +112,10 @@ class Pager:
         self._display.rect(
             x=5, y=5, width=self._display._width, height=16, color=COLOR_BLACK
         )
-        self._display.text16(string="12", x=5, y=5, color=temp_color)
-        # self._display.ellipse(
-        #     x=len(temperature) * 8 + 8, y=7, xr=2, yr=2, color=temp_color
-        # )
+        x, y = self._display.scaled_text(
+            string=temperature, x=5, y=25, c=temp_color, s=5
+        )
+        self._display.ellipse(x=x + 8, y=25, xr=4, yr=4, color=temp_color)
         # # Line 2
         # self._display.rect(
         #     x=5, y=15, width=self._display._width, height=8, color=COLOR_BLACK

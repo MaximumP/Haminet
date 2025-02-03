@@ -1,5 +1,6 @@
 from framebuf import FrameBuffer, RGB565
 from display.fonts.font16x16 import font
+from display.fonts.petme128_8x8 import font as petme
 from machine import Pin, SPI
 from time import sleep
 
@@ -180,23 +181,24 @@ class ILI9225:
         self._fb.text(string, x, y, color)
         return (x + (len(string) * 8), y + 8)
 
-    def text16(self, string, x, y, color) -> tuple[int, int]:
+    def scaled_text(self, string, x, y, c, s=2) -> tuple[int, int]:
         x0 = x
         y0 = y
-        for cnt, char in enumerate(string):
-            print(
-                f"print character '{char}' #{ord(char)} to position x: {x + (cnt + 16)} y: {y}"
-            )
-            char_start_index = (ord(char) - 32) * 16
-            for column in range(16):  # loop over character data
-                char_column = font[char_start_index + column]
-                for v_line in range(16):
-                    pixel = char_column >> v_line
+        iterator = list(range(8)) * s
+        iterator.sort()
+        for char in string:
+            char_index = (ord(char) - 32) * 8
+            for column_offset in iterator:
+                column = petme[char_index + column_offset]
+                # todo loop s times
+                for pixel_offset in range(8):
+                    pixel = column >> pixel_offset
                     if pixel & 1:
-                        self._fb.pixel(x0, v_line + y0, color)
+                        y00 = pixel_offset * s + y0
+                        for y_offset in range(s):
+                            self._fb.pixel(x0, y00 + y_offset, c)
                 x0 = x0 + 1
-
-        return (x + (len(string) * 16), y + 16)
+        return (x0, y + 8 * s)
 
     def rect(
         self, x: int, y: int, width: int, height: int, color: int, fill: bool = True
