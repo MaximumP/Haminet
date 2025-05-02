@@ -54,8 +54,11 @@ class EnvironmentControl:
         self._prev_atomizer_state = self._atomizer.value()
 
     def _control_fan(self, humidity: float):
-        if (humidity >= (self._config.get_target_humidity() + self._config.get_humidity_tolerance()) and
-                self._prev_humidity >= (self._config.get_target_humidity() + self._config.get_humidity_tolerance())):
+        if humidity >= (
+            self._config.get_target_humidity() + self._config.get_humidity_tolerance()
+        ) and self._prev_humidity >= (
+            self._config.get_target_humidity() + self._config.get_humidity_tolerance()
+        ):
             self._fan.value(1)
             #self._neo_pixel[self._FAN_LED_INDEX] = self._COLOR_ACTIVE_FAN
         if humidity <= self._config.get_target_humidity() and self._prev_humidity <= self._config.get_target_humidity():
@@ -63,7 +66,9 @@ class EnvironmentControl:
             #self._neo_pixel[self._FAN_LED_INDEX] = self._LED_OFF
 
     def _control_atomizer(self, humidity: float):
-        if humidity <= (self._config.get_target_humidity() - self._config.get_humidity_tolerance()):
+        if humidity <= (
+            self._config.get_target_humidity() - self._config.get_humidity_tolerance()
+        ):
             self._atomizer.value(1)
             #self._neo_pixel[self._ATOMIZER_LED_INDEX] = self._COLOR_ACTIVE_ATOMIZER
         if humidity >= self._config.get_target_humidity():
@@ -71,9 +76,13 @@ class EnvironmentControl:
             #self._neo_pixel[self._ATOMIZER_LED_INDEX] = self._LED_OFF
 
     def _control_fridge(self, temperature: float):
-        if (temperature >= (self._config.get_target_temperature() + self._config.get_temperature_tolerance()) and
-                self._prev_temperature >=
-                (self._config.get_target_temperature() + self._config.get_temperature_tolerance())):
+        if temperature >= (
+            self._config.get_target_temperature()
+            + self._config.get_temperature_tolerance()
+        ) and self._prev_temperature >= (
+            self._config.get_target_temperature()
+            + self._config.get_temperature_tolerance()
+        ):
             self._fridge.value(0)
             #self._neo_pixel[self._COOLER_LED_INDEX] = self._COLOR_ACTIVE_COOLING
         if (temperature <= self._config.get_target_temperature() and
@@ -82,7 +91,10 @@ class EnvironmentControl:
             #self._neo_pixel[self._COOLER_LED_INDEX] = self._LED_OFF
 
     def _control_heater(self, temperature: float):
-        if temperature <= (self._config.get_target_temperature() - self._config.get_temperature_tolerance()):
+        if temperature <= (
+            self._config.get_target_temperature()
+            - self._config.get_temperature_tolerance()
+        ):
             self._heater.value(1)
         if temperature >= (self._config.get_target_temperature() + self._config.get_temperature_tolerance() / 2):
             self._heater.value(0)
@@ -101,9 +113,8 @@ class EnvironmentControl:
 
     def state_changed(self) -> bool:
         return (
-                self._prev_fan_state != self._fan.value() or
-                self._prev_fridge_state != self._fridge.value() or
-                self._prev_heater_state != self._heater.value() or
-                self._prev_atomizer_state != self._atomizer.value()
+            self._prev_fan_state != self._fan.value()
+            or self._prev_fridge_state != self._fridge.value()
+            or self._prev_heater_state != self._heater.value()
+            or self._prev_atomizer_state != self._atomizer.value()
         )
-

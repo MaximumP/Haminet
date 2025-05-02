@@ -40,6 +40,7 @@ class Pager:
             self._edit_value = 0
 
     def cursor_up(self):
+        step = FLOAT_STEP if self._cursor < 3 else INT_STEP
         if self._page == 0:
             return
         if self._edit_mode:
@@ -51,12 +52,13 @@ class Pager:
             self._cursor = 3
 
     def cursor_down(self):
+        step = FLOAT_STEP if self._cursor < 3 else INT_STEP
         if self._page == 0:
             return
         if self._edit_mode:
             self._edit_value -= 0.5
             return
-        if self._cursor < 3:
+        if self._cursor < 5:
             self._cursor += 1
         else:
             self._cursor = 0
@@ -82,6 +84,10 @@ class Pager:
                 self._edit_value = self._config.get_target_humidity()
             elif self._cursor == 3:
                 self._edit_value = self._config.get_humidity_tolerance()
+            elif self._cursor == 4:
+                self._edit_value = self._config.get_fan_on_interval()
+            elif self._cursor == 5:
+                self._edit_value = self._config.get_fan_off_interval()
         else:
             if self._cursor == 0:
                 self._config.set_target_temperature(self._edit_value)

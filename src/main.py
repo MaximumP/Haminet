@@ -8,7 +8,9 @@ from debounce import DebouncedSwitch
 from display.pages import ConfigPage, ErrorPage, OverviewPage
 from output import Pager
 from environment_control import EnvironmentControl
+from random import randint
 
+timer = Timer(-1)
 up = Pin(17, Pin.IN, Pin.PULL_DOWN)
 down = Pin(21, Pin.IN, Pin.PULL_DOWN)
 edit = Pin(18, Pin.IN, Pin.PULL_DOWN)
@@ -104,13 +106,6 @@ def fan_control(scheduler: Scheduler):
             scheduler.reset_counter()
 
 
-def reset_dht():
-    dht_enable.value(0)
-    sleep(1)
-    dht_enable.value(1)
-    print("Recovered")
-
-
 def main():
     tmp = 0.0
     humidity = 0.0
@@ -144,11 +139,31 @@ def main():
         try:
             environment_control.control(tmp, humidity)
         except OSError as e:
+            dht_enable.value(0)
             print("Failure")
-            reset_dht()
             print(e)
 
         pager.display()
 
 
+def start_up():
+    environment_control._led_orange.value(1)
+    sleep(0.5)
+    environment_control._led_red.value(1)
+    sleep(0.5)
+    environment_control._led_green.value(1)
+    sleep(0.5)
+    environment_control._led_yellow.value(1)
+    sleep(0.5)
+
+    environment_control._led_orange.value(0)
+    sleep(0.5)
+    environment_control._led_red.value(0)
+    sleep(0.5)
+    environment_control._led_green.value(0)
+    sleep(0.5)
+    environment_control._led_yellow.value(0)
+
+
+# start_up()
 main()
