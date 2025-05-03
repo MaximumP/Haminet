@@ -35,6 +35,12 @@ class EnvironmentControl:
         self._config = config
         #self._neo_pixel = NeoPixel(Pin(0), 10)
 
+    def get_timer_text(self) -> str:
+        if self._fan.value() == 1:
+            return f"Luefter aus in {self._config.get_fan_on_interval() - self._increment_counter} min"
+        else:
+            return f"Luefter an in  {self._config.get_fan_off_interval() - self._increment_counter} min"
+
     def control(self, temperature: float, humidity: float):
         if not self._prev_humidity:
             self._prev_humidity = humidity
