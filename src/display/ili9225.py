@@ -47,6 +47,25 @@ ILI9225C_INVON = 0x21
 
 ILI9225_START_BYTE = 0x005C
 
+FAN_ICON = [
+    0x780,
+    0xFC0,
+    0xFE0,
+    0x7E0,
+    0x3C6,
+    0x31CF,
+    0x7D9F,
+    0xFE7F,
+    0xFE7F,
+    0xF9BE,
+    0xF38C,
+    0x63C0,
+    0x7E0,
+    0x7F0,
+    0x3F0,
+    0x1E0,
+]
+
 
 class ILI9225:
     def __init__(
@@ -183,7 +202,7 @@ class ILI9225:
 
     def scaled_text(self, string, x, y, c, s=2) -> tuple[int, int]:
         x0 = x
-        y0 = y
+        y0 = y00 = y
         iterator = list(range(8)) * s
         iterator.sort()
         for char in string:
@@ -198,12 +217,20 @@ class ILI9225:
                         for y_offset in range(s):
                             self._fb.pixel(x0, y00 + y_offset, c)
                 x0 = x0 + 1
-        return (x0, y + 8 * s)
+        return (x0, y00)
+
+    def icon(self, icon) -> None:
+        for column in range(16):
+            for pixel in range(16):
+                pass
 
     def rect(
         self, x: int, y: int, width: int, height: int, color: int, fill: bool = True
     ) -> None:
         self._fb.rect(x, y, width, height, color, fill)
+
+    def clear(self) -> None:
+        self._fb.rect(0, 0, self._width, self._height, COLOR_BLACK)
 
     def ellipse(
         self, x: int, y: int, xr: int, yr: int, color: int, fill: bool = False
