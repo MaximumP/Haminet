@@ -55,6 +55,7 @@ class ILI9225:
         chip_select_pin: int,
         data_command_pin: int,
         reset_pin: int,
+        framebuffer: FrameBuffer | None = None,
         width=176,
         height=220,
     ):
@@ -65,8 +66,11 @@ class ILI9225:
         self._width = width
         self._height = height
 
-        self._buffer = bytearray(width * height * 2)  # 2 bytes per pixel (RGB565)
-        self._fb = FrameBuffer(self._buffer, self._width, self._height, RGB565)
+        if framebuffer:
+            self._fb = framebuffer
+        else:
+            self._buffer = bytearray(width * height * 2)  # 2 bytes per pixel (RGB565)
+            self._fb = FrameBuffer(self._buffer, self._width, self._height, RGB565)
 
         self._init_display()
 

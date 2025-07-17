@@ -1,10 +1,12 @@
 from time import sleep
 
+from framebuf import RGB565, FrameBuffer
 from machine import Pin, Timer
 from dht import DHT22
 from config import Config
 from debounce import DebouncedSwitch
 
+from display.pages import ConfigPage, ErrorPage, OverviewPage
 from output import Pager
 from environment_control import EnvironmentControl
 
@@ -26,7 +28,17 @@ environment_control = EnvironmentControl(
     heater=Pin(15, mode=Pin.OUT, value=0),
     config=config,
 )
-pager = Pager(dht, config, environment_control)
+buffer = bytearray(176 * 220 * 2)  # 2 bytes per pixel (RGB565)
+framebuffer = FrameBuffer(buffer, 176, 220, RGB565)
+overview_page = OverviewPage(framebuffer, 176, 220)
+config_page = ConfigPage(framebuffer, 176, 220, config)
+error_page = ErrorPage(framebuffer, 176, 220)
+pages = [
+    overview_page,
+    config_page,
+    error_page
+]
+pager = Pager(environment_control, pages, framebuffer)
 
 
 def button_handler(pin: Pin):
@@ -83,18 +95,25 @@ def main():
     tim.init(mode=Timer.PERIODIC, period=3000, callback=measure)
     print("startup completed")
     while True:
+        overview_page.set_data(
+            dht.temperature(),
+            dht.humidity(),
+            config.get_target_temperature(),
+            config.get_humidity_tolerance()
+        )
         tmp = dht.temperature()
         humidity = dht.humidity()
         try:
             environment_control.control(tmp, humidity)
             if error:
-                pager.error(error)
+                error_page.set_data(error)
+                pager.set_page(error_page)
                 error = None
                 reset_dht()
-            else:
-                pager.display()
         except OSError as e:
             print(e)
+
+        pager.display()
 
 
 main()
