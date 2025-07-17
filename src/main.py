@@ -1,5 +1,4 @@
 from time import sleep
-from random import uniform
 
 from machine import Pin, Timer
 from dht import DHT22
@@ -15,7 +14,9 @@ up = Pin(17, Pin.IN, Pin.PULL_DOWN)
 down = Pin(19, Pin.IN, Pin.PULL_DOWN)
 edit = Pin(18, Pin.IN, Pin.PULL_DOWN)
 # enter = Pin(11, Pin.IN, Pin.PULL_DOWN)
+dht_enable = Pin(1, Pin.OUT, value=1)
 page_button = Pin(16, Pin.IN, Pin.PULL_DOWN)
+error: Exception | None = None
 
 config = Config("config.json")
 environment_control = EnvironmentControl(
@@ -23,55 +24,77 @@ environment_control = EnvironmentControl(
     atomizer=Pin(13, mode=Pin.OUT, value=0),
     fridge=Pin(14, mode=Pin.OUT, value=0),
     heater=Pin(15, mode=Pin.OUT, value=0),
-    led_green=Pin(0, Pin.OUT, value=0),
-    led_red=Pin(1, Pin.OUT, value=0),
-    led_orange=Pin(4, Pin.OUT, value=0),
-    led_yellow=Pin(6, Pin.OUT, value=0),
     config=config,
 )
 pager = Pager(dht, config, environment_control)
 
-page_handler = DebouncedSwitch(page_button, lambda l: pager.next_page())
-up_handler = DebouncedSwitch(up, lambda l: pager.cursor_up())
-down_handler = DebouncedSwitch(down, lambda l: pager.cursor_down())
-edit_handler = DebouncedSwitch(edit, lambda l: pager.edit())
+
+def button_handler(pin: Pin):
+    global error
+    if error:
+        error = None
+        return
+    if pin == up:
+        pager.cursor_up()
+    if pin == down:
+        pager.cursor_down()
+    if pin == edit:
+        pager.edit()
+    if pin == page_button:
+        pager.next_page()
+
+
+tim = Timer()
+
+
+def measure(pin: Pin | None = None):
+    global error
+    try:
+        print("measure")
+        dht.measure()
+    except OSError as e:
+        tim.deinit()
+        error = e
+        print(e)
+
+
+def reset_dht():
+    dht_enable.value(0)
+    sleep(1)
+    dht_enable.value(1)
+    sleep(3)
+    tim.init(mode=Timer.PERIODIC, period=3000, callback=measure)
+    print("Recovered")
+
+
+page_handler = DebouncedSwitch(page_button, button_handler)
+up_handler = DebouncedSwitch(up, button_handler)
+down_handler = DebouncedSwitch(down, button_handler)
+edit_handler = DebouncedSwitch(edit, button_handler)
 
 
 def main():
+    global error
+    tmp = 0.0
+    humidity = 0.0
+    print("startup wait")
+    sleep(1)
+    measure()
+    tim.init(mode=Timer.PERIODIC, period=3000, callback=measure)
+    print("startup completed")
     while True:
+        tmp = dht.temperature()
+        humidity = dht.humidity()
         try:
-            dht.measure()
-        except OSError as e:
-            dht.temperature = lambda: 4  # uniform(5.0, 32.5)
-            dht.humidity = lambda: uniform(15.0, 78.8)
-            dht.measure = lambda: None
-            print(e)
-        try:
-            environment_control.control(dht.temperature(), dht.humidity())
-            pager.display()
+            environment_control.control(tmp, humidity)
+            if error:
+                pager.error(error)
+                error = None
+                reset_dht()
+            else:
+                pager.display()
         except OSError as e:
             print(e)
-        sleep(1)
 
 
-def start_up():
-    environment_control._led_orange.value(1)
-    sleep(0.5)
-    environment_control._led_red.value(1)
-    sleep(0.5)
-    environment_control._led_green.value(1)
-    sleep(0.5)
-    environment_control._led_yellow.value(1)
-    sleep(0.5)
-
-    environment_control._led_orange.value(0)
-    sleep(0.5)
-    environment_control._led_red.value(0)
-    sleep(0.5)
-    environment_control._led_green.value(0)
-    sleep(0.5)
-    environment_control._led_yellow.value(0)
-
-
-# start_up()
 main()

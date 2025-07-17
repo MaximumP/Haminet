@@ -162,6 +162,9 @@ class ILI9225:
         self.write_command(0x21)  # RAM address set (Y)
         self.write_data(y0)
 
+    def framebuffer(self):
+        return self._fb
+
     def update(self):
         """Write the framebuffer content to the display."""
         self.set_window(0, 0, self._width - 1, self._height - 1)
