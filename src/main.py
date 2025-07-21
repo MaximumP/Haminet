@@ -1,5 +1,6 @@
 from time import sleep
-
+from typing import Callable
+from micropython import schedule
 from machine import Pin, Timer
 from dht import DHT22
 from config import Config
@@ -11,19 +12,19 @@ from environment_control import EnvironmentControl
 dht = DHT22(Pin(22, Pin.PULL_UP))
 timer = Timer(-1)
 up = Pin(17, Pin.IN, Pin.PULL_DOWN)
-down = Pin(19, Pin.IN, Pin.PULL_DOWN)
+down = Pin(21, Pin.IN, Pin.PULL_DOWN)
 edit = Pin(18, Pin.IN, Pin.PULL_DOWN)
 # enter = Pin(11, Pin.IN, Pin.PULL_DOWN)
-dht_enable = Pin(1, Pin.OUT, value=1)
 page_button = Pin(16, Pin.IN, Pin.PULL_DOWN)
+dht_enable = Pin(13, Pin.OUT, value=1)
 error: Exception | None = None
 
 config = Config("config.json")
 environment_control = EnvironmentControl(
     fan=Pin(12, mode=Pin.OUT, value=0),
-    atomizer=Pin(13, mode=Pin.OUT, value=0),
+    atomizer=Pin(15, mode=Pin.OUT, value=0),
     fridge=Pin(14, mode=Pin.OUT, value=0),
-    heater=Pin(15, mode=Pin.OUT, value=0),
+    heater=Pin(28, mode=Pin.OUT, value=0),
     config=config,
 )
 pager = Pager(dht, config, environment_control)
@@ -44,7 +45,44 @@ def button_handler(pin: Pin):
         pager.next_page()
 
 
+class Scheduler:
+
+    def __init__(self, dht: DHT22, dht_enable: Pin, fan_control):
+        self._dht_enable = dht_enable
+        self._timer = Timer()
+        self._dht = dht
+        cb = self._timer_cb
+        self._measure_cb = self._measure
+        self._fan_control = fan_control
+        self._log_cb = self._log
+        self._timer.init(mode=Timer.PERIODIC, period=1000, callback=cb)
+
+    def _log(self, message: str):
+        print(message)
+
+    def _timer_cb(self, timer):
+        self._increment_counter = self._increment_counter + 1
+        if self._increment_counter % 3 == 0:
+            schedule(self._log_cb, "Scheduled measure")
+            schedule(self._measure_cb, None)
+        if self._increment_counter % 60 == 0:
+            schedule(self._log_cb, "Schedule fan control")
+            schedule(self._fan_control, self._increment_counter)
+            self._increment_counter = 0
+
+    def _measure(self):
+        try:
+            if self._dht_enable.value() == 0:
+                self._dht.measure()
+            else:
+                self._dht_enable.value(1)
+        except OSError as e:
+            print(e)
+            self._dht_enable.value(0)
+
 tim = Timer()
+timer_cnt = 0
+
 
 
 def measure(pin: Pin | None = None):
