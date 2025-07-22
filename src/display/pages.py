@@ -110,7 +110,7 @@ class OverviewPage(Page):
         x, y = self.scaled_text(f"{self._temperature:.1f}", 5, 16, COLOR_GREEN)
         self._framebuffer.ellipse(x + 8, 16, 4, 4, COLOR_GREEN, False)
         self._framebuffer.text("Soll", 5, 42, COLOR_WHITE)
-        self._framebuffer.text(f"{self._target_temperature:.1f}", 5, 54, COLOR_LIGHTGREEN)
+        self._framebuffer.text(f"{self._target_temperature:03.1f}", 5, 54, COLOR_LIGHTGREEN)
 
         offset = int(self._height / 3)
         self._framebuffer.text(
@@ -121,7 +121,7 @@ class OverviewPage(Page):
             f"{self._humidity:.1f} %", 5, offset + 16, COLOR_BLUE
         )
         self._framebuffer.text("Soll", 5, offset + 42, COLOR_WHITE)
-        self._framebuffer.text(f"{self. _target_humidity:.1f}", 5, offset + 54, COLOR_LIGHTBLUE)
+        self._framebuffer.text(f"{self._target_humidity:03.1f}", 5, offset + 54, COLOR_LIGHTBLUE)
         self._cleared = False
 
         offset = 2 * int(self._height / 3)

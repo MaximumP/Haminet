@@ -128,7 +128,7 @@ def main():
             dht.temperature(),
             dht.humidity(),
             config.get_target_temperature(),
-            config.get_humidity_tolerance(),
+            config.get_target_humidity(),
             environment_control.get_fan_state(),
             config.get_fan_on_interval(),
             config.get_fan_off_interval(),
