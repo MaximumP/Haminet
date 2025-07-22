@@ -79,6 +79,7 @@ class Scheduler:
     def _measure(self, args):
         try:
             if self._dht_enable.value() == 1:
+                print("measure")
                 self._dht.measure()
             else:
                 self._dht_enable.value(1)
@@ -96,10 +97,12 @@ edit_handler = DebouncedSwitch(edit, button_handler)
 def fan_control(scheduler: Scheduler):
     if fan.value() == 1:
         if (config.get_fan_on_interval() * 60) <= scheduler.counter():
+            print("Fan off")
             fan.value(0)
             scheduler.reset_counter()
     else:
         if (config.get_fan_off_interval() * 60) <= scheduler.counter():
+            print("Fan on")
             fan.value(1)
             scheduler.reset_counter()
 
