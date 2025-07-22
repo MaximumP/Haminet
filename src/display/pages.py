@@ -129,11 +129,10 @@ class OverviewPage(Page):
             "Luefter", 2, offset, COLOR_WHITE
         )
         time = self._fan_on_time if self._fan_state else self._fan_off_time
-        #print(f"off: {self._fan_off_time} on: {self._fan_on_time}, time: {time}, state: {self._fan_state}")
         self._framebuffer.text(
-            f"Luefter {'aus' if self._fan_state else 'an'} in {self._remaining_time(time, self._counter)}",
+            f"{'Aus' if self._fan_state else 'An'} in {self._remaining_time(time, self._counter)}",
             5,
-            offset + 2 * 16, COLOR_WHITE
+            offset + 16, COLOR_WHITE
         )
 
 class ConfigPage(Page):
