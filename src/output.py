@@ -23,11 +23,11 @@ class Pager:
     _display: ILI9225
 
 
-    def __init__(self, environment: EnvironmentControl, pages: list[Page], framebuffer: framebuf.FrameBuffer):
+    def __init__(self, environment: EnvironmentControl, pages: list[Page], framebuffer: framebuf.FrameBuffer, buffer: bytearray):
         self._environment = environment
         self._display_led = Pin(7, Pin.OUT, value=1)
         spi = SPI(0, baudrate=40000000, sck=Pin(2), mosi=Pin(3))
-        self._display = ILI9225(spi, 5, 8, 9, framebuffer)
+        self._display = ILI9225(spi, 5, 8, 9, framebuffer, buffer)
         self._pages = pages
 
     def next_page(self):

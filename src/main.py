@@ -1,7 +1,4 @@
-from time import sleep
-
 from framebuf import RGB565, FrameBuffer
-from typing import Callable
 from micropython import schedule
 from machine import Pin, Timer
 from dht import DHT22
@@ -20,11 +17,11 @@ edit = Pin(18, Pin.IN, Pin.PULL_DOWN)
 # enter = Pin(11, Pin.IN, Pin.PULL_DOWN)
 page_button = Pin(16, Pin.IN, Pin.PULL_DOWN)
 dht_enable = Pin(13, Pin.OUT, value=1)
-error: Exception | None = None
+fan = Pin(12, mode=Pin.OUT, value=0)
 
 config = Config("config.json")
 environment_control = EnvironmentControl(
-    fan=Pin(12, mode=Pin.OUT, value=0),
+    fan=fan,
     atomizer=Pin(15, mode=Pin.OUT, value=0),
     fridge=Pin(14, mode=Pin.OUT, value=0),
     heater=Pin(28, mode=Pin.OUT, value=0),
@@ -40,14 +37,10 @@ pages = [
     config_page,
     error_page
 ]
-pager = Pager(environment_control, pages, framebuffer)
+pager = Pager(environment_control, pages, framebuffer, buffer)
 
 
 def button_handler(pin: Pin):
-    global error
-    if error:
-        error = None
-        return
     if pin == up:
         pager.cursor_up()
     if pin == down:
@@ -59,63 +52,40 @@ def button_handler(pin: Pin):
 
 
 class Scheduler:
+    _err_cnt = 0
 
     def __init__(self, dht: DHT22, dht_enable: Pin, fan_control):
+        self._increment_counter = 0
         self._dht_enable = dht_enable
         self._timer = Timer()
         self._dht = dht
         cb = self._timer_cb
-        self._measure_cb = self._measure
         self._fan_control = fan_control
-        self._log_cb = self._log
         self._timer.init(mode=Timer.PERIODIC, period=1000, callback=cb)
 
-    def _log(self, message: str):
-        print(message)
+    def reset_counter(self):
+        self._increment_counter = 0
+
+    def counter(self):
+        return self._increment_counter
 
     def _timer_cb(self, timer):
         self._increment_counter = self._increment_counter + 1
         if self._increment_counter % 3 == 0:
-            schedule(self._log_cb, "Scheduled measure")
-            schedule(self._measure_cb, None)
+            schedule(self._measure, None)
         if self._increment_counter % 60 == 0:
-            schedule(self._log_cb, "Schedule fan control")
-            schedule(self._fan_control, self._increment_counter)
-            self._increment_counter = 0
+            schedule(self._fan_control, self)
 
-    def _measure(self):
+    def _measure(self, args):
         try:
-            if self._dht_enable.value() == 0:
+            if self._dht_enable.value() == 1:
                 self._dht.measure()
             else:
                 self._dht_enable.value(1)
         except OSError as e:
-            print(e)
+            self._err_cnt = self._err_cnt + 1
+            print(f"{e} {self._err_cnt}")
             self._dht_enable.value(0)
-
-tim = Timer()
-timer_cnt = 0
-
-
-
-def measure(pin: Pin | None = None):
-    global error
-    try:
-        print("measure")
-        dht.measure()
-    except OSError as e:
-        tim.deinit()
-        error = e
-        print(e)
-
-
-def reset_dht():
-    dht_enable.value(0)
-    sleep(1)
-    dht_enable.value(1)
-    sleep(3)
-    tim.init(mode=Timer.PERIODIC, period=3000, callback=measure)
-    print("Recovered")
 
 
 page_handler = DebouncedSwitch(page_button, button_handler)
@@ -123,32 +93,36 @@ up_handler = DebouncedSwitch(up, button_handler)
 down_handler = DebouncedSwitch(down, button_handler)
 edit_handler = DebouncedSwitch(edit, button_handler)
 
+def fan_control(scheduler: Scheduler):
+    if fan.value() == 1:
+        if (config.get_fan_on_interval() * 60) <= scheduler.counter():
+            fan.value(0)
+            scheduler.reset_counter()
+    else:
+        if (config.get_fan_off_interval() * 60) <= scheduler.counter():
+            fan.value(1)
+            scheduler.reset_counter()
+
 
 def main():
-    global error
     tmp = 0.0
     humidity = 0.0
-    print("startup wait")
-    sleep(1)
-    measure()
-    tim.init(mode=Timer.PERIODIC, period=3000, callback=measure)
-    print("startup completed")
+    scheduler = Scheduler(dht, dht_enable, fan_control)
     while True:
         overview_page.set_data(
             dht.temperature(),
             dht.humidity(),
             config.get_target_temperature(),
-            config.get_humidity_tolerance()
+            config.get_humidity_tolerance(),
+            environment_control.get_fan_state(),
+            config.get_fan_on_interval(),
+            config.get_fan_off_interval(),
+            scheduler.counter()
         )
         tmp = dht.temperature()
         humidity = dht.humidity()
         try:
             environment_control.control(tmp, humidity)
-            if error:
-                error_page.set_data(error)
-                pager.set_page(error_page)
-                error = None
-                reset_dht()
         except OSError as e:
             print(e)
 

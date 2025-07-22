@@ -56,6 +56,7 @@ class ILI9225:
         data_command_pin: int,
         reset_pin: int,
         framebuffer: FrameBuffer | None = None,
+        buffer: bytearray | None = None,
         width=176,
         height=220,
     ):
@@ -66,7 +67,8 @@ class ILI9225:
         self._width = width
         self._height = height
 
-        if framebuffer:
+        if framebuffer and buffer:
+            self._buffer = buffer
             self._fb = framebuffer
         else:
             self._buffer = bytearray(width * height * 2)  # 2 bytes per pixel (RGB565)

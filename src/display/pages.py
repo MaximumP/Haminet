@@ -57,6 +57,12 @@ class Page:
 class OverviewPage(Page):
     _temperature: float = 0.0
     _humidity: float = 0.0
+    _target_temperature: float = 0.0
+    _target_humidity: float = 0.0
+    _fan_state: bool = False
+    _fan_on_time: int = 0
+    _fan_off_time: int = 0
+    _counter: int = 0
     _blink: bool = True
 
     def set_data(
@@ -65,11 +71,33 @@ class OverviewPage(Page):
         humidity: float,
         target_temperature: float,
         target_humidity: float,
+        fan_state: bool,
+        fan_on_time: int,
+        fan_off_time: int,
+        counter: int
     ):
         self._temperature = temperature
         self._humidity = humidity
         self._target_temperature = target_temperature
         self._target_humidity = target_humidity
+        self._fan_state = fan_state
+        self._fan_on_time = fan_on_time
+        self._fan_off_time = fan_off_time
+        self._counter = counter
+
+    def _remaining_time(self, minutes: int, seconds: int):
+        # Convert total time in seconds
+        total_seconds = minutes * 60 - seconds
+
+        # Handle negative values
+        if total_seconds < 0:
+            return "0:00"
+
+        # Convert back to minutes and seconds
+        m = total_seconds // 60
+        s = total_seconds % 60
+
+        return f"{m}:{s:02}"
 
     def render(self):
         self.clear()
@@ -84,17 +112,29 @@ class OverviewPage(Page):
         self._framebuffer.text("Soll", 5, 42, COLOR_WHITE)
         self._framebuffer.text(f"{self._target_temperature:.1f}", 5, 54, COLOR_LIGHTGREEN)
 
+        offset = int(self._height / 3)
         self._framebuffer.text(
-            "Feuchtigkeit", 2, int(self._height / 2), COLOR_WHITE
+            "Feuchtigkeit", 2, offset, COLOR_WHITE
         )
 
-        offset = int(self._height / 2)
         self.scaled_text(
             f"{self._humidity:.1f} %", 5, offset + 16, COLOR_BLUE
         )
         self._framebuffer.text("Soll", 5, offset + 42, COLOR_WHITE)
         self._framebuffer.text(f"{self. _target_humidity:.1f}", 5, offset + 54, COLOR_LIGHTBLUE)
         self._cleared = False
+
+        offset = 2 * int(self._height / 3)
+        self._framebuffer.text(
+            "Luefter", 2, offset, COLOR_WHITE
+        )
+        time = self._fan_on_time if self._fan_state else self._fan_off_time
+        #print(f"off: {self._fan_off_time} on: {self._fan_on_time}, time: {time}, state: {self._fan_state}")
+        self._framebuffer.text(
+            f"Luefter {'aus' if self._fan_state else 'an'} in {self._remaining_time(time, self._counter)}",
+            5,
+            offset + 2 * 16, COLOR_WHITE
+        )
 
 class ConfigPage(Page):
     _config: Config

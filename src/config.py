@@ -8,13 +8,17 @@ class Config:
     _target_humidity: float
     _humidity_tolerance: float
     _config_file: str
+    _fan_on_interval: int
+    _fan_off_interval: int
 
-    def __init__(self, config_file: str = None):
+    def __init__(self, config_file: str):
         self._config_file = config_file
-        self._target_temperature = 50
-        self._target_humidity = 55
+        self._target_temperature = 5
+        self._target_humidity = 75
         self._temperature_tolerance = 2
-        self._humidity_tolerance = 5
+        self._humidity_tolerance = 3
+        self._fan_on_interval = 1
+        self._fan_off_interval = 24
         if config_file:
             if config_file in os.listdir():
                 self._read_config_file()
@@ -53,6 +57,22 @@ class Config:
             self._humidity_tolerance = value
             self._write_config_file()
 
+    def get_fan_on_interval(self):
+        return self._fan_on_interval
+
+    def set_fan_on_interval(self, value: int):
+        if self._fan_on_interval != value:
+            self._fan_on_interval = value
+            self._write_config_file()
+
+    def get_fan_off_interval(self):
+        return self._fan_off_interval
+
+    def set_fan_off_interval(self, value: int):
+        if self._fan_off_interval != value:
+            self._fan_off_interval = value
+            self._write_config_file()
+
     def _read_config_file(self):
         with open(self._config_file, "r") as config_file:
             config = ujson.loads(config_file.read())
@@ -61,16 +81,22 @@ class Config:
             self._target_humidity = config.get("target_humidity")
             self._humidity_tolerance = config.get("humidity_tolerance")
             self._temperature_tolerance = config.get("temperature_tolerance")
+            self._fan_on_interval = config.get("fan_on_interval")
+            self._fan_off_interval = config.get("fan_off_interval")
             print("read config file")
 
     def _write_config_file(self):
         if self._config_file:
-            json = ujson.dumps({
-                "target_temperature": self._target_temperature,
-                "target_humidity": self._target_humidity,
-                "humidity_tolerance": self._humidity_tolerance,
-                "temperature_tolerance": self._temperature_tolerance
-            })
+            json = ujson.dumps(
+                {
+                    "target_temperature": self._target_temperature,
+                    "target_humidity": self._target_humidity,
+                    "humidity_tolerance": self._humidity_tolerance,
+                    "temperature_tolerance": self._temperature_tolerance,
+                    "fan_on_interval": self._fan_on_interval,
+                    "fan_off_interval": self._fan_off_interval,
+                }
+            )
             with open(self._config_file, "w") as config_file:
                 config_file.write(json)
             print("created config file")
