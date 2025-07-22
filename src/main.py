@@ -79,7 +79,6 @@ class Scheduler:
     def _measure(self, args):
         try:
             if self._dht_enable.value() == 1:
-                print("measure")
                 self._dht.measure()
             else:
                 self._dht_enable.value(1)
@@ -111,7 +110,20 @@ def main():
     tmp = 0.0
     humidity = 0.0
     scheduler = Scheduler(dht, dht_enable, fan_control)
+    log = True
     while True:
+        if scheduler.counter() % 10 == 0:
+            if log:
+                print(f"Temperature:\t\t {dht.temperature()}")
+                print(f"Humidity:\t\t {dht.humidity()}")
+                print(f"Target temperature:\t {config.get_target_temperature()}")
+                print(f"Target humidity:\t {config.get_target_humidity()}")
+                print(f"Fan state:\t\t {environment_control.get_fan_state()}")
+                print(f"Fan on intervall:\t {config.get_fan_on_interval()}")
+                print(f"Fan off intervall:\t {config.get_fan_off_interval()}\n")
+                log = False
+        else:
+            log = True
         overview_page.set_data(
             dht.temperature(),
             dht.humidity(),
