@@ -16,7 +16,7 @@ class DebouncedSwitch:
         self._set_cb = getattr(self.sw, 'callback', None) or self.sw.irq
         self.delay = delay
         self.tim = Timer(tid)
-        self.callback(cb, arg)
+        self.callback(cb, arg or sw)
 
     def sw_cb(self, pin=None):
         self._set_cb(None)
