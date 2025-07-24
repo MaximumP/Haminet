@@ -1,9 +1,13 @@
+from sys import stdin
+from select import select
+from time import sleep
 from framebuf import RGB565, FrameBuffer
 from micropython import schedule
 from machine import Pin, Timer
 from dht import DHT22
 from config import Config
 from debounce import DebouncedSwitch
+from _thread import start_new_thread
 
 from display.pages import ConfigPage, ErrorPage, OverviewPage
 from output import Pager
@@ -48,18 +52,38 @@ def button_handler(pin: Pin):
     if pin == page_button:
         pager.next_page()
 
+def measure():
+    try:
+        print("measure")
+        dht.measure()
+    except OSError as e:
+        print(f"{e}")
 
 class Scheduler:
     _err_cnt = 0
 
     def __init__(self, dht: DHT22, dht_enable: Pin, fan_control):
+        self._running = False
+        self._thread_runing = False
         self._increment_counter = 0
         self._dht_enable = dht_enable
         self._timer = Timer()
         self._dht = dht
-        cb = self._timer_cb
+        #cb = self._timer_cb
         self._fan_control = fan_control
-        self._timer.init(mode=Timer.PERIODIC, period=1000, callback=cb)
+        #self._timer.init(mode=Timer.PERIODIC, period=1000, callback=cb)
+
+    def start(self):
+        self._running = True
+        self._timer.init(mode=Timer.PERIODIC, period=1000, callback=self._timer_cb)
+        start_new_thread(self._run, ())
+
+    def _run(self):
+        self._thread_runing = True
+        while self._running:
+            sleep(3)
+            self._dht.measure()
+        self._thread_runing = False
 
     def reset_counter(self):
         self._increment_counter = 0
@@ -67,10 +91,15 @@ class Scheduler:
     def counter(self):
         return self._increment_counter
 
+    def stop(self):
+        self._running = False
+        while self._thread_runing:
+            sleep(.1)
+        print("Scheduler stopped")
+        timer.deinit()
+
     def _timer_cb(self, timer):
         self._increment_counter = self._increment_counter + 1
-        if self._increment_counter % 3 == 0:
-            schedule(self._measure, None)
         if self._increment_counter % 60 == 0:
             schedule(self._fan_control, self)
 
@@ -103,19 +132,17 @@ def fan_control(scheduler: Scheduler):
             fan.value(1)
             scheduler.reset_counter()
 
+def read_serial():
+    if stdin in select([stdin], [], [], 0)[0]:
+        return stdin.readline().strip()
+    return None
 
-def reset_dht():
-    dht_enable.value(0)
-    sleep(1)
-    dht_enable.value(1)
-    print("Recovered")
-
-
+scheduler = Scheduler(dht, dht_enable, fan_control)
 def main():
     tmp = 0.0
     humidity = 0.0
-    scheduler = Scheduler(dht, dht_enable, fan_control)
     log = True
+    scheduler.start()
     while True:
         if scheduler.counter() % 10 == 0:
             if log:
@@ -141,6 +168,9 @@ def main():
         )
         tmp = dht.temperature()
         humidity = dht.humidity()
+        msg = read_serial()
+        if msg:
+            print(f"Pico received: {msg}")
         try:
             environment_control.control(tmp, humidity)
         except OSError as e:
@@ -150,5 +180,10 @@ def main():
 
         pager.display()
 
+try:
+    main()
+except KeyboardInterrupt:
+    scheduler.stop()
+    print("stopped timer")
+scheduler.stop()
 
-main()

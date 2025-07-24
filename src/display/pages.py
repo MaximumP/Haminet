@@ -1,11 +1,11 @@
 from framebuf import FrameBuffer
 from config import Config
 from display.fonts.petme128_8x8 import font as petme
-from random import randint
 import errno
 
 from display.ili9225 import (
     COLOR_BLACK,
+    COLOR_CYAN,
     COLOR_MAGENTA,
     COLOR_WHITE,
     COLOR_RED,
@@ -13,6 +13,8 @@ from display.ili9225 import (
     COLOR_LIGHTGREEN as COLOR_LIGHTBLUE,
     COLOR_BLUE as COLOR_GREEN,
     COLOR_LIGHTBLUE as COLOR_LIGHTGREEN,
+    COLOR_YELLOW,
+    COLOR_BROWN
 )
 
 
@@ -53,6 +55,14 @@ class Page:
     def render(self):
         pass
 
+    def handle_button_up(self):
+        pass
+
+    def handle_button_down(self):
+        pass
+
+    def handle_button_enter(self):
+        pass
 
 class OverviewPage(Page):
     _temperature: float = 0.0
@@ -107,7 +117,7 @@ class OverviewPage(Page):
         self._framebuffer.rect(self._width - 15, 5, 10, 10, color, True)
 
         self._framebuffer.text("Temperatur", 2, 2, COLOR_WHITE)
-        x, y = self.scaled_text(f"{self._temperature:.1f}", 5, 16, COLOR_GREEN)
+        x, y = self.scaled_text(f"{self._temperature:03.1f}", 5, 16, COLOR_GREEN)
         self._framebuffer.ellipse(x + 8, 16, 4, 4, COLOR_GREEN, False)
         self._framebuffer.text("Soll", 5, 42, COLOR_WHITE)
         self._framebuffer.text(f"{self._target_temperature:03.1f}", 5, 54, COLOR_LIGHTGREEN)
@@ -135,22 +145,99 @@ class OverviewPage(Page):
             offset + 16, COLOR_WHITE
         )
 
+class ConfigValue:
+    def __init__(self, getter, setter):
+        self._getter = getter
+        self._setter = setter
+
+    def get(self):
+        return self._getter()
+
+    def set(self, value: int | float):
+        self._setter(value)
+
 class ConfigPage(Page):
     _config: Config
     _cursor: int = 0
+    _edit_mode: bool = False
+    _edit_value: int | float = 0
+
+    _TEMPERATURE_TARGET = 0
+    _TEMPERATURE_TOLERANCE = 1
+    _HUMIDITY_TARGET = 2
+    _HUMIDITY_TOLERANCE = 3
+    _FAN_ON_INTERVAL = 4
+    _FAN_OFF_INTERVAL = 5
 
     def __init__(self, framebuffer: FrameBuffer, width: int, height: int, config: Config):
         self._config = config
+        self._config_value_accessors: list[ConfigValue] = [
+            ConfigValue(self._config.get_target_temperature, self._config.set_target_temperature),
+            ConfigValue(self._config.get_temperature_tolerance, self._config.set_temperature_tolerance),
+            ConfigValue(self._config.get_target_humidity, self._config.set_target_humidity),
+            ConfigValue(self._config.get_humidity_tolerance, self._config.set_humidity_tolerance),
+            ConfigValue(self._config.get_fan_on_interval, self._config.set_fan_on_interval),
+            ConfigValue(self._config.get_fan_off_interval, self._config.set_fan_off_interval)
+        ]
         super().__init__(framebuffer, width, height)
 
     def set_data(self, cursor: int):
         self._cursor = cursor
 
+    def _get_color(self, line: int):
+        if self._edit_mode:
+            highlight_color = COLOR_GREEN
+        else:
+            highlight_color = COLOR_YELLOW
+        return highlight_color if line == self._cursor else COLOR_WHITE
+
+    def _get_config_value(self, config_accessor: int):
+        if self._edit_mode:
+            return self._edit_mode
+        return self._config_value_accessors[config_accessor].get()
+
     def render(self):
         self.clear()
         self._framebuffer.text("Konfiguration", 2, 2, COLOR_WHITE)
-        self._framebuffer.text("Soll Temperatur", 5, 16, COLOR_WHITE)
-        self._framebuffer.text(f"{self._config.get_target_temperature()}", 5, 30, COLOR_GREEN)
+
+        self._framebuffer.text("Temperatur", 5, 16, COLOR_LIGHTBLUE)
+        text = f"Soll:     {self._get_config_value(self._TEMPERATURE_TARGET):03.1f} C"
+        self._framebuffer.text(text, 5, 30, self._get_color(0))
+        self._framebuffer.ellipse((len(text) + -1) * 8 + 2, 31, 2, 2, self._get_color(0), False)
+
+        self._framebuffer.text(f"Toleranz: {self._get_config_value(self._TEMPERATURE_TOLERANCE):03.1f} C", 5, 44, self._get_color(1))
+        self._framebuffer.ellipse((len(text) + -1) * 8 + 2, 44, 2, 2, self._get_color(1), False)
+
+        self._framebuffer.text("Luftfeuchtigkeit", 2, 60, COLOR_LIGHTBLUE)
+        self._framebuffer.text(f"Soll:     {self._get_config_value(self._HUMIDITY_TARGET):03.1f} %", 5, 74, self._get_color(2))
+        self._framebuffer.text(f"Toleranz: {self._get_config_value(self._TEMPERATURE_TOLERANCE):03.1f} %", 5, 88, self._get_color(3))
+
+        self._framebuffer.text("Luefter", 2, 104, COLOR_LIGHTBLUE)
+        self._framebuffer.text(f"An:       {self._get_config_value(self._FAN_ON_INTERVAL)} min", 5, 118, self._get_color(4))
+        self._framebuffer.text(f"Aus:      {self._get_config_value(self._FAN_OFF_INTERVAL)} min", 5, 132, self._get_color(5))
+
+        self._framebuffer.text
+
+    def handle_button_down(self):
+        if self._edit_mode:
+            pass
+        else:
+            if self._cursor < 5:
+                self._cursor += 1
+            else:
+                self._cursor = 0
+
+    def handle_button_up(self):
+        if self._cursor > 0:
+            self._cursor -= 1
+        else:
+            self._cursor = 5
+    def handle_button_enter(self):
+        self._edit_mode = not self._edit_mode
+        if self._edit_mode:
+            self._edit_value = self._get_config_value(self._cursor)
+        else:
+            self._config_value_accessors[self._cursor].set(self._edit_value)
 
 class ErrorPage(Page):
     _error: Exception | None = None
