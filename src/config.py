@@ -13,12 +13,12 @@ class Config:
 
     def __init__(self, config_file: str):
         self._config_file = config_file
-        self._target_temperature = 5
-        self._target_humidity = 75
-        self._temperature_tolerance = 2
-        self._humidity_tolerance = 3
-        self._fan_on_interval = 1
-        self._fan_off_interval = 24
+        self._target_temperature = 6.0
+        self._target_humidity = 70.0
+        self._temperature_tolerance = 1.0
+        self._humidity_tolerance = 2
+        self._fan_on_interval = 2
+        self._fan_off_interval = 60
         if config_file:
             if config_file in os.listdir():
                 self._read_config_file()

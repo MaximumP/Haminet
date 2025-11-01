@@ -8,13 +8,12 @@ from debounce import DebouncedSwitch
 from display.pages import ConfigPage, ErrorPage, OverviewPage
 from output import Pager
 from environment_control import EnvironmentControl
-from random import randint
 
+dht = DHT22(Pin(22, Pin.PULL_UP))
 timer = Timer(-1)
 up = Pin(17, Pin.IN, Pin.PULL_DOWN)
 down = Pin(21, Pin.IN, Pin.PULL_DOWN)
 edit = Pin(18, Pin.IN, Pin.PULL_DOWN)
-# enter = Pin(11, Pin.IN, Pin.PULL_DOWN)
 page_button = Pin(16, Pin.IN, Pin.PULL_DOWN)
 dht_enable = Pin(13, Pin.OUT, value=1)
 fan = Pin(12, mode=Pin.OUT, value=0)
@@ -32,11 +31,7 @@ framebuffer = FrameBuffer(buffer, 176, 220, RGB565)
 overview_page = OverviewPage(framebuffer, 176, 220)
 config_page = ConfigPage(framebuffer, 176, 220, config)
 error_page = ErrorPage(framebuffer, 176, 220)
-pages = [
-    overview_page,
-    config_page,
-    error_page
-]
+pages = [overview_page, config_page, error_page]
 pager = Pager(environment_control, pages, framebuffer, buffer)
 
 
@@ -93,6 +88,7 @@ up_handler = DebouncedSwitch(up, button_handler)
 down_handler = DebouncedSwitch(down, button_handler)
 edit_handler = DebouncedSwitch(edit, button_handler)
 
+
 def fan_control(scheduler: Scheduler):
     if fan.value() == 1:
         if (config.get_fan_on_interval() * 60) <= scheduler.counter():
@@ -132,38 +128,16 @@ def main():
             environment_control.get_fan_state(),
             config.get_fan_on_interval(),
             config.get_fan_off_interval(),
-            scheduler.counter()
+            scheduler.counter(),
         )
         tmp = dht.temperature()
         humidity = dht.humidity()
         try:
             environment_control.control(tmp, humidity)
         except OSError as e:
-            dht_enable.value(0)
-            print("Failure")
             print(e)
 
         pager.display()
 
 
-def start_up():
-    environment_control._led_orange.value(1)
-    sleep(0.5)
-    environment_control._led_red.value(1)
-    sleep(0.5)
-    environment_control._led_green.value(1)
-    sleep(0.5)
-    environment_control._led_yellow.value(1)
-    sleep(0.5)
-
-    environment_control._led_orange.value(0)
-    sleep(0.5)
-    environment_control._led_red.value(0)
-    sleep(0.5)
-    environment_control._led_green.value(0)
-    sleep(0.5)
-    environment_control._led_yellow.value(0)
-
-
-# start_up()
 main()
