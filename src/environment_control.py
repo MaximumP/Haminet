@@ -25,6 +25,8 @@ class EnvironmentControl:
         self._atomizer = atomizer
         self._fridge = fridge
         self._heater = heater
+        self._led_atomizer = Pin(6, Pin.OUT, value=0)
+        self._led_fridge = Pin(4, Pin.OUT, value=0)
         self._config = config
         # self._neo_pixel = NeoPixel(Pin(0), 10)
 
@@ -66,9 +68,11 @@ class EnvironmentControl:
             self._config.get_target_humidity() - self._config.get_humidity_tolerance()
         ):
             self._atomizer.value(1)
+            self._led_atomizer.value(1)
             # self._neo_pixel[self._ATOMIZER_LED_INDEX] = self._COLOR_ACTIVE_ATOMIZER
         if humidity >= self._config.get_target_humidity():
             self._atomizer.value(0)
+            self._led_atomizer.value(0)
             # self._neo_pixel[self._ATOMIZER_LED_INDEX] = self._LED_OFF
 
     def _control_fridge(self, temperature: float):
@@ -80,12 +84,14 @@ class EnvironmentControl:
             + self._config.get_temperature_tolerance()
         ):
             self._fridge.value(0)
+            self._led_fridge.value(1)
             # self._neo_pixel[self._COOLER_LED_INDEX] = self._COLOR_ACTIVE_COOLING
         if (
             temperature <= self._config.get_target_temperature()
             and self._prev_temperature <= self._config.get_target_temperature()
         ):
             self._fridge.value(1)
+            self._led_fridge.value(0)
             # self._neo_pixel[self._COOLER_LED_INDEX] = self._LED_OFF
 
     def _control_heater(self, temperature: float):

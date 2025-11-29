@@ -121,15 +121,21 @@ down_handler = DebouncedSwitch(down, button_handler)
 edit_handler = DebouncedSwitch(edit, button_handler)
 
 
+led_fan = Pin(1, Pin.OUT, value=0)
+
+
 def fan_control(scheduler: Scheduler):
     if fan.value() == 1:
         if (config.get_fan_on_interval() * 60) <= scheduler.counter():
             fan.value(0)
+            led_fan.value(0)
             scheduler.reset_counter()
     else:
         if (config.get_fan_off_interval() * 60) <= scheduler.counter():
             fan.value(1)
+            led_fan.value(1)
             scheduler.reset_counter()
+
 
 def read_serial():
     if stdin in select([stdin], [], [], 0)[0]:
