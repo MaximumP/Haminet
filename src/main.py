@@ -49,38 +49,39 @@ def button_handler(pin: Pin):
     if pin == page_button:
         pager.next_page()
 
-def measure():
-    try:
-        print("measure")
-        dht.measure()
-    except OSError as e:
-        print(f"{e}")
+
+should_run = False
+is_running = False
+
 
 class Scheduler:
     _err_cnt = 0
 
     def __init__(self, dht: DHT22, dht_enable: Pin, fan_control):
-        self._running = False
-        self._thread_runing = False
+        # self._running = False
+        # self._thread_runing = False
         self._increment_counter = 0
         self._dht_enable = dht_enable
         self._timer = Timer()
         self._dht = dht
-        #cb = self._timer_cb
         self._fan_control = fan_control
-        #self._timer.init(mode=Timer.PERIODIC, period=1000, callback=cb)
 
     def start(self):
-        self._running = True
+        global should_run
+        should_run = True
         self._timer.init(mode=Timer.PERIODIC, period=1000, callback=self._timer_cb)
         start_new_thread(self._run, ())
 
     def _run(self):
-        self._thread_runing = True
-        while self._running:
+        global should_run
+        global is_running
+        is_running = True
+        while should_run:
             sleep(3)
-            self._dht.measure()
-        self._thread_runing = False
+            self._measure({})
+            # self._dht.measure()
+        is_running = False
+        print(f"exited loop: {is_running}")
 
     def reset_counter(self):
         self._increment_counter = 0
@@ -89,11 +90,13 @@ class Scheduler:
         return self._increment_counter
 
     def stop(self):
-        self._running = False
-        while self._thread_runing:
-            sleep(.1)
+        global should_run
+        should_run = False
+        print("attempt stopping the thread")
+        self._timer.deinit()
+        while is_running:
+            sleep(0.1)
         print("Scheduler stopped")
-        timer.deinit()
 
     def _timer_cb(self, timer):
         self._increment_counter = self._increment_counter + 1
@@ -121,12 +124,10 @@ edit_handler = DebouncedSwitch(edit, button_handler)
 def fan_control(scheduler: Scheduler):
     if fan.value() == 1:
         if (config.get_fan_on_interval() * 60) <= scheduler.counter():
-            print("Fan off")
             fan.value(0)
             scheduler.reset_counter()
     else:
         if (config.get_fan_off_interval() * 60) <= scheduler.counter():
-            print("Fan on")
             fan.value(1)
             scheduler.reset_counter()
 
@@ -135,7 +136,10 @@ def read_serial():
         return stdin.readline().strip()
     return None
 
+
 scheduler = Scheduler(dht, dht_enable, fan_control)
+
+
 def main():
     tmp = 0.0
     humidity = 0.0
@@ -144,13 +148,15 @@ def main():
     while True:
         if scheduler.counter() % 10 == 0:
             if log:
-                print(f"Temperature:\t\t {dht.temperature()}")
-                print(f"Humidity:\t\t {dht.humidity()}")
-                print(f"Target temperature:\t {config.get_target_temperature()}")
-                print(f"Target humidity:\t {config.get_target_humidity()}")
-                print(f"Fan state:\t\t {environment_control.get_fan_state()}")
-                print(f"Fan on intervall:\t {config.get_fan_on_interval()}")
-                print(f"Fan off intervall:\t {config.get_fan_off_interval()}\n")
+                print(f"Temperatur:\t\t {dht.temperature()}")
+                print(f"Luftfeuchtigkeit:\t {dht.humidity()}")
+                print(f"Soll Temperatur:\t {config.get_target_temperature()}")
+                print(f"Soll Luftfeuchtigkeit:\t {config.get_target_humidity()}")
+                print(
+                    f"Lüfter:\t\t\t {'An' if environment_control.get_fan_state() else 'Aus'}"
+                )
+                print(f"Lüfter an für:\t\t {config.get_fan_on_interval()} Minuten")
+                print(f"Lüfter aus für:\t\t {config.get_fan_off_interval()} Minuten\n")
                 log = False
         else:
             log = True
@@ -171,10 +177,14 @@ def main():
             print(f"Pico received: {msg}")
         try:
             environment_control.control(tmp, humidity)
+        except KeyboardInterrupt:
+            scheduler.stop()
+            print("stopped timer")
         except OSError as e:
             print(e)
 
         pager.display()
+
 
 try:
     main()
@@ -182,4 +192,3 @@ except KeyboardInterrupt:
     scheduler.stop()
     print("stopped timer")
 scheduler.stop()
-

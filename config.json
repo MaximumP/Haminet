@@ -1,0 +1,9 @@
+{
+  "fan_on_interval": 2,
+  "target_temperature": 6,
+  "target_humidity": 70.0,
+  "temperature_tolerance": 1.0,
+  "humidity_tolerance": 2,
+  "fan_off_interval": 60
+}
+

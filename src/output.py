@@ -46,27 +46,9 @@ class Pager:
 
     def cursor_up(self):
         self._pages[self._page].handle_button_up()
-        # if self._page == 0:
-        #     return
-        # if self._edit_mode:
-        #     self._edit_value += 0.5
-        #     return
-        # if self._cursor > 0:
-        #     self._cursor -= 1
-        # else:
-        #     self._cursor = 3
 
     def cursor_down(self):
         self._pages[self._page].handle_button_down()
-        # if self._page == 0:
-        #     return
-        # if self._edit_mode:
-        #     self._edit_value -= 0.5
-        #     return
-        # if self._cursor < 3:
-        #     self._cursor += 1
-        # else:
-        #     self._cursor = 0
 
     def set_page(self, page: Page):
         try:
@@ -77,29 +59,6 @@ class Pager:
 
     def edit(self):
         self._pages[self._page].handle_button_enter()
-        # if self._page == 0:
-        #     return
-
-        # self._edit_mode = not self._edit_mode
-        # if self._edit_mode:
-        #     if self._cursor == 0:
-        #         self._edit_value = self._config.get_target_temperature()
-        #     elif self._cursor == 1:
-        #         self._edit_value = self._config.get_temperature_tolerance()
-        #     elif self._cursor == 2:
-        #         self._edit_value = self._config.get_target_humidity()
-        #     elif self._cursor == 3:
-        #         self._edit_value = self._config.get_humidity_tolerance()
-        # else:
-        #     if self._cursor == 0:
-        #         self._config.set_target_temperature(self._edit_value)
-        #     elif self._cursor == 1:
-        #         self._config.set_temperature_tolerance(self._edit_value)
-        #     elif self._cursor == 2:
-        #         self._config.set_target_humidity(self._edit_value)
-        #     elif self._cursor == 3:
-        #         self._config.set_humidity_tolerance(self._edit_value)
-        #     self._edit_value = 0
 
     def display(self):
         self._pages[self._page].render()
