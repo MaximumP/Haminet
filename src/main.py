@@ -56,6 +56,7 @@ is_running = False
 
 class Scheduler:
     _err_cnt = 0
+    _is_measuring = False
 
     def __init__(self, dht: DHT22, dht_enable: Pin, fan_control):
         # self._running = False
@@ -63,6 +64,7 @@ class Scheduler:
         self._increment_counter = 0
         self._dht_enable = dht_enable
         self._timer = Timer()
+        self._measure_timer = Timer()
         self._dht = dht
         self._fan_control = fan_control
 
@@ -70,7 +72,16 @@ class Scheduler:
         global should_run
         should_run = True
         self._timer.init(mode=Timer.PERIODIC, period=1000, callback=self._timer_cb)
-        start_new_thread(self._run, ())
+        self._measure_timer.init(
+            mode=Timer.PERIODIC, period=3500, callback=self._run_new_thread
+        )
+        # start_new_thread(self._run, ())
+
+    def _run_new_thread(self, timer):
+        if self._is_measuring:
+            return
+        self._is_measuring = True
+        start_new_thread(self._measure, ())
 
     def _run(self):
         global should_run
@@ -78,7 +89,7 @@ class Scheduler:
         is_running = True
         while should_run:
             sleep(3)
-            self._measure({})
+            self._measure()
             # self._dht.measure()
         is_running = False
         print(f"exited loop: {is_running}")
@@ -103,7 +114,7 @@ class Scheduler:
         if self._increment_counter % 60 == 0:
             schedule(self._fan_control, self)
 
-    def _measure(self, args):
+    def _measure(self):
         try:
             if self._dht_enable.value() == 1:
                 self._dht.measure()
@@ -113,6 +124,8 @@ class Scheduler:
             self._err_cnt = self._err_cnt + 1
             print(f"{e} {self._err_cnt}")
             self._dht_enable.value(0)
+        finally:
+            self._is_measuring = False
 
 
 page_handler = DebouncedSwitch(page_button, button_handler)
@@ -152,20 +165,20 @@ def main():
     log = True
     scheduler.start()
     while True:
-        if scheduler.counter() % 10 == 0:
-            if log:
-                print(f"Temperatur:\t\t {dht.temperature()}")
-                print(f"Luftfeuchtigkeit:\t {dht.humidity()}")
-                print(f"Soll Temperatur:\t {config.get_target_temperature()}")
-                print(f"Soll Luftfeuchtigkeit:\t {config.get_target_humidity()}")
-                print(
-                    f"Lüfter:\t\t\t {'An' if environment_control.get_fan_state() else 'Aus'}"
-                )
-                print(f"Lüfter an für:\t\t {config.get_fan_on_interval()} Minuten")
-                print(f"Lüfter aus für:\t\t {config.get_fan_off_interval()} Minuten\n")
-                log = False
-        else:
-            log = True
+        # if scheduler.counter() % 10 == 0:
+        #     if log:
+        #         print(f"Temperatur:\t\t {dht.temperature()}")
+        #         print(f"Luftfeuchtigkeit:\t {dht.humidity()}")
+        #         print(f"Soll Temperatur:\t {config.get_target_temperature()}")
+        #         print(f"Soll Luftfeuchtigkeit:\t {config.get_target_humidity()}")
+        #         print(
+        #             f"Lüfter:\t\t\t {'An' if environment_control.get_fan_state() else 'Aus'}"
+        #         )
+        #         print(f"Lüfter an für:\t\t {config.get_fan_on_interval()} Minuten")
+        #         print(f"Lüfter aus für:\t\t {config.get_fan_off_interval()} Minuten\n")
+        #         log = False
+        # else:
+        #     log = True
         overview_page.set_data(
             dht.temperature(),
             dht.humidity(),
